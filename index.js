@@ -27,6 +27,9 @@ app.use(express.urlencoded({ extended: true }));  // Parse form data
 app.use(morgan("dev"));                           // HTTP logger
 
 
+// ✅ Routes
+app.use("/api/v1", rootRouter);
+
 // ✅ Static files
 app.use(express.static(path.join(__dirname, 'public')));
 app.use("/api/v1", express.static("public"));
@@ -37,8 +40,7 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'view'));
 
 
-// ✅ Routes
-app.use("/api/v1", rootRouter);
+
 
 app.get('/api', (req, res) => {
     res.send('Welcome to Maryland University');
