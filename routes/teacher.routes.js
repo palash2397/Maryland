@@ -18,7 +18,7 @@ const teacherRouter = Router();
 
 teacherRouter.post(
   "/register",
-  setUploadPath("teacher/certificates"),
+  setUploadPath("teachers/certificates"),
   upload.single("certificate"),
   registerHandle
 );

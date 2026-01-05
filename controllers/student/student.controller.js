@@ -311,11 +311,14 @@ export const updateProfileHandle = async (req, res) => {
     if (!user) {
       return res.status(404).json(new ApiResponse(404, {}, Msg.USER_NOT_FOUND));
     }
+    let existingUserName;
+    if (userName) {
+      existingUserName = await Student.findOne({
+        userName: userName,
+        _id: { $ne: req.user.id },
+      });
+    }
 
-    const existingUserName = await Student.findOne({
-      userName: userName,
-      _id: { $ne: req.user.id },
-    });
     if (existingUserName) {
       return res
         .status(400)
@@ -333,7 +336,7 @@ export const updateProfileHandle = async (req, res) => {
     user.grade = grade || user.grade;
 
     if (req.file) {
-      deleteOldImages("student/profile", user.avatar);
+      deleteOldImages("students/profile", user.avatar);
       user.avatar = req.file.filename;
     }
 
@@ -362,9 +365,8 @@ export const profileHandle = async (req, res) => {
     }
 
     user.avatar = user.avatar
-      ? `${process.env.BASE_URL}/student/profile/${user.avatar}`
+      ? `${process.env.BASE_URL}/students/profile/${user.avatar}`
       : `${process.env.DEFAULT_PROFILE_PIC}`;
-
 
     console.log(`user jprofile success --------->`);
     res.status(200).json(new ApiResponse(200, user, Msg.DATA_FETCHED));
@@ -389,7 +391,7 @@ export const changePasswordHandle = async (req, res) => {
         .status(400)
         .json(new ApiResponse(400, {}, error.details[0].message));
 
-    const user = await Student.findById(req.user.id);
+    const user = await Student.findById(req.user.id).select("+password");
     if (!user) {
       return res.status(404).json(new ApiResponse(404, {}, Msg.USER_NOT_FOUND));
     }
@@ -400,7 +402,8 @@ export const changePasswordHandle = async (req, res) => {
         .json(new ApiResponse(401, {}, Msg.ENTERED_OLD_PASSWORD));
     }
 
-    const isPasswordValid = await await user.isPasswordCorrect(oldPassword);
+    const isPasswordValid = await user.isPasswordCorrect(oldPassword);
+    console.log(`isPasswordValid --------->`, isPasswordValid);
     if (!isPasswordValid) {
       return res
         .status(400)

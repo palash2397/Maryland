@@ -22,7 +22,7 @@ studentRouter.post("/login", loginHandle);
 studentRouter.post("/forgot-password", forgotPasswordHandle);
 studentRouter.get("/verify-password/:token", verifyPasswordHandle);
 studentRouter.post("/reset-password", resetPasswordHandle);
-studentRouter.put("/profile/update", auth, setUploadPath("student/profile"), upload.single("avatar"), updateProfileHandle);
+studentRouter.put("/profile/update", auth, setUploadPath("students/profile"), upload.single("avatar"), updateProfileHandle);
 studentRouter.get("/profile", auth, profileHandle);
 studentRouter.put("/change-password", auth, changePasswordHandle);
 
