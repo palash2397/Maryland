@@ -3,12 +3,15 @@ import Jwt from "jsonwebtoken";
 
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { Msg } from "../../utils/responseMsg.js";
-import { generateRandomString, getExpirationTime, deleteOldImages } from "../../utils/helper.js";
+import {
+  generateRandomString,
+  getExpirationTime,
+  deleteOldImages,
+} from "../../utils/helper.js";
 import {
   sendVerificationMail,
   sendForgotPasswordMail,
 } from "../../utils/email.js";
-
 
 import Student from "../../models/student/student.js";
 
@@ -294,7 +297,7 @@ export const updateProfileHandle = async (req, res) => {
       lastName: Joi.string().optional(),
       mobileNumber: Joi.string().optional(),
       age: Joi.number().optional(),
-       gender: Joi.string().valid('Male', 'Female', 'Other').optional(),
+      gender: Joi.string().valid("Male", "Female", "Other").optional(),
       grade: Joi.string().optional(),
     });
 
@@ -330,14 +333,15 @@ export const updateProfileHandle = async (req, res) => {
     user.grade = grade || user.grade;
 
     if (req.file) {
-        deleteOldImages("student/profile", user.avatar)
-        user.avatar = req.file.filename;
+      deleteOldImages("student/profile", user.avatar);
+      user.avatar = req.file.filename;
     }
-    
 
     await user.save();
 
-    user.avatar = user.avatar ? `${process.env.BASE_URL}/student/profile/${user.avatar}` : `${process.env.DEFAULT_PROFILE_PIC}`;
+    user.avatar = user.avatar
+      ? `${process.env.BASE_URL}/student/profile/${user.avatar}`
+      : `${process.env.DEFAULT_PROFILE_PIC}`;
 
     res.status(200).json(new ApiResponse(200, user, Msg.DATA_UPDATED));
   } catch (error) {
@@ -348,7 +352,11 @@ export const updateProfileHandle = async (req, res) => {
 
 export const profileHandle = async (req, res) => {
   try {
-    const user = await Student.findById(req.user.id).select("-password -googleId -provider -createdAt -updatedAt -__v -actToken -linkExpireAt -passwordResetToken");
+    const user = await Student.findById(req.user.id).select(
+      "-password -googleId -provider -createdAt -updatedAt -__v -actToken -linkExpireAt -passwordResetToken"
+    );
+
+    console.log(`user --------->`, user);
     if (!user) {
       return res.status(404).json(new ApiResponse(404, {}, Msg.USER_NOT_FOUND));
     }
@@ -356,13 +364,15 @@ export const profileHandle = async (req, res) => {
     user.avatar = user.avatar
       ? `${process.env.BASE_URL}/student/profile/${user.avatar}`
       : `${process.env.DEFAULT_PROFILE_PIC}`;
+
+
+    console.log(`user jprofile success --------->`);
     res.status(200).json(new ApiResponse(200, user, Msg.DATA_FETCHED));
   } catch (error) {
     console.error("Error fetching profile:", error);
     res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
-
 
 export const changePasswordHandle = async (req, res) => {
   try {
@@ -385,7 +395,9 @@ export const changePasswordHandle = async (req, res) => {
     }
 
     if (oldPassword == newPassword) {
-      return res.status(401).json(new ApiResponse(401, {}, Msg.ENTERED_OLD_PASSWORD));
+      return res
+        .status(401)
+        .json(new ApiResponse(401, {}, Msg.ENTERED_OLD_PASSWORD));
     }
 
     const isPasswordValid = await await user.isPasswordCorrect(oldPassword);
@@ -399,9 +411,7 @@ export const changePasswordHandle = async (req, res) => {
     user.password = newPassword;
     await user.save();
 
-    return res
-      .status(200)
-      .json(new ApiResponse(200, {}, Msg.PASSWORD_CHANGED));
+    return res.status(200).json(new ApiResponse(200, {}, Msg.PASSWORD_CHANGED));
   } catch (error) {
     console.error("Error changing password:", error);
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
