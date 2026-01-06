@@ -1,6 +1,8 @@
 import express from 'express';
 import morgan from "morgan";
+import core from "cors"
 import "dotenv/config.js";
+
 
 import { connectDB } from './DB/config.js';
 
@@ -22,9 +24,14 @@ connectDB();
 
 
 // ✅ Middlewares
+app.use(core({
+    origin: "*",
+    credentials: true
+}));
 app.use(express.json());                          // Parse JSON body
 app.use(express.urlencoded({ extended: true }));  // Parse form data
-app.use(morgan("dev"));                           // HTTP logger
+app.use(morgan("dev"));    
+                       // HTTP logger
 
 
 // ✅ Routes
