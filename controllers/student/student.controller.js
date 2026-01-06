@@ -23,8 +23,13 @@ export const registerHandle = async (req, res) => {
       firstName: Joi.string().min(2).max(50).required(),
       lastName: Joi.string().min(2).max(50).required(),
       email: Joi.string().email().required(),
-      password: Joi.string().min(8).required(),
-      confirmPassword: Joi.string().valid(Joi.ref("password")).required(),
+      password: Joi.string().min(8).required().messages({
+        "string.min": "Password must be at least 8 characters long",
+        "string.required": "Password is required",
+      }),
+      confirmPassword: Joi.string().valid(Joi.ref("password")).required().messages({
+        "any.only": "Passwords do not match",
+      }),
     });
     const { error } = schema.validate(req.body);
 
