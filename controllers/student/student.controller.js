@@ -23,7 +23,7 @@ export const registerHandle = async (req, res) => {
       firstName: Joi.string().min(2).max(50).required(),
       lastName: Joi.string().min(2).max(50).required(),
       email: Joi.string().email().required(),
-      password: Joi.string().min(6).required(),
+      password: Joi.string().min(8).required(),
       confirmPassword: Joi.string().valid(Joi.ref("password")).required(),
     });
     const { error } = schema.validate(req.body);
@@ -79,7 +79,7 @@ export const registerHandle = async (req, res) => {
 
     console.log("Verification email sent successfully");
 
-    return res.status(201).json(new ApiResponse(201, {}, Msg.USER_REGISTER));
+    return res.status(201).json(new ApiResponse(201, {}, Msg.EMAIL_VERIFICATION_SENT));
   } catch (error) {
     console.error("Error in registerHandle:", error);
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
