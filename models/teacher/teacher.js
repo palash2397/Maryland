@@ -75,18 +75,22 @@ const TeacherSchema = new mongoose.Schema(
       required: true,
     },
 
-     certificate: {
-      type: String, // store file path / URL
-      default: null,
+    certificate: {
+      key: {
+        type: String,
+        default: null,
+      },
+      url: {
+        type: String,
+        default: null,
+      },
     },
 
-    
     passwordResetToken: {
       type: String,
       default: null,
     },
 
-    
     isVerified: {
       type: Boolean,
       default: false,

@@ -7,7 +7,9 @@ import {
   generateRandomString,
   getExpirationTime,
   setUploadPath,
+  deleteFile,
 } from "../../utils/helper.js";
+import { getSignedFileUrl } from "../../utils/s3SignedUrl.js";
 import {
   sendVerificationMail,
   sendForgotPasswordMail,
@@ -15,6 +17,14 @@ import {
 import Teacher from "../../models/teacher/teacher.js";
 
 export const registerHandle = async (req, res) => {
+  let certificatePath = null;
+
+  if (req.file) {
+    certificatePath = {
+      key: req.file.key,
+      url: req.file.location,
+    };
+  }
   try {
     const {
       firstName,
@@ -107,7 +117,7 @@ export const registerHandle = async (req, res) => {
       gradesYouTeach,
       gender,
       dateOfBirth: dob,
-      certificate: req.file ? req.file.filename : null,
+      certificate: certificatePath,
       city,
       state,
       country,
@@ -352,7 +362,9 @@ export const changePasswordHandle = async (req, res) => {
     }
 
     if (oldPassword == newPassword) {
-      return res.status(401).json(new ApiResponse(401, {}, Msg.ENTERED_OLD_PASSWORD));
+      return res
+        .status(401)
+        .json(new ApiResponse(401, {}, Msg.ENTERED_OLD_PASSWORD));
     }
 
     const isPasswordValid = await await user.isPasswordCorrect(oldPassword);
@@ -366,11 +378,36 @@ export const changePasswordHandle = async (req, res) => {
     user.password = newPassword;
     await user.save();
 
-    return res
-      .status(200)
-      .json(new ApiResponse(200, {}, Msg.PASSWORD_CHANGED));
+    return res.status(200).json(new ApiResponse(200, {}, Msg.PASSWORD_CHANGED));
   } catch (error) {
     console.error("Error changing password:", error);
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+};
+
+export const myProfileHandle = async (req, res) => {
+  try {
+    const teacher = await Teacher.findById(req.user.id).select(
+      "-password -__v -passwordResetToken -linkExpireAt -actToken -createdAt -updatedAt"
+    );
+
+    if (!teacher) {
+      return res.status(404).json(new ApiResponse(404, {}, Msg.USER_NOT_FOUND));
+    }
+
+    if (teacher.certificate?.key) {
+      teacher.certificate = {
+        url: await getSignedFileUrl(teacher.certificate.key),
+      };
+    } else {
+      teacher.certificate = null;
+    }
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, teacher, Msg.DATA_FETCHED));
+  } catch (error) {
+    console.error("Error getting teacher:", error);
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };

@@ -40,3 +40,16 @@ export const deleteOldImages = (folder, file) => {
     console.log("error while deleting file --------->", error);
   }
 };
+
+
+export const deleteFile = (filePath) => {
+  if (!filePath) return;
+
+  fs.unlink(filePath, (err) => {
+    if (err) {
+      console.error("Failed to delete file:", filePath, err.message);
+    } else {
+      console.log("Temporary file deleted:", filePath);
+    }
+  });
+};

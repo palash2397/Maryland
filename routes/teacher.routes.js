@@ -8,18 +8,18 @@ import {
   verifyPasswordHandle,
   resetPasswordHandle,
   changePasswordHandle,
-  
+  myProfileHandle
 } from "../controllers/teacher/teacher.controller.js";
 import { setUploadPath } from "../utils/helper.js";
 import { auth } from "../middlewares/auth.js";
 import { upload } from "../middlewares/multer.js";
+import { uploadCertificate } from "../middlewares/s3upload.js";
 
 const teacherRouter = Router();
 
 teacherRouter.post(
   "/register",
-  setUploadPath("teachers/certificates"),
-  upload.single("certificate"),
+  uploadCertificate,
   registerHandle
 );
 teacherRouter.get("/verify-account/:token", verifyAccountHandle);
@@ -28,6 +28,8 @@ teacherRouter.post("/forgot-password", forgotPasswordHandle);
 teacherRouter.get("/verify-password/:token", verifyPasswordHandle);
 teacherRouter.post("/reset-password", resetPasswordHandle);
 teacherRouter.put("/change-password", auth, changePasswordHandle);
+teacherRouter.get("/my-profile", auth, myProfileHandle);
+
 
 
 export default teacherRouter;
