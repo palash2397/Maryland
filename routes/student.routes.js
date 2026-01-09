@@ -12,6 +12,7 @@ import {
 } from "../controllers/student/student.controller.js";
 import { auth } from "../middlewares/auth.js";
 import { setUploadPath } from "../utils/helper.js";
+import {uploadProfileImage} from "../middlewares/s3upload.js";
 import { upload } from "../middlewares/multer.js";
 
 const studentRouter = Router();
@@ -22,7 +23,7 @@ studentRouter.post("/login", loginHandle);
 studentRouter.post("/forgot-password", forgotPasswordHandle);
 studentRouter.get("/verify-password/:token", verifyPasswordHandle);
 studentRouter.post("/reset-password", resetPasswordHandle);
-studentRouter.put("/profile/update", auth, setUploadPath("students/profile"), upload.single("avatar"), updateProfileHandle);
+studentRouter.put("/profile/update", auth, uploadProfileImage, updateProfileHandle);
 studentRouter.get("/profile", auth, profileHandle);
 studentRouter.put("/change-password", auth, changePasswordHandle);
 

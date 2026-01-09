@@ -10,3 +10,22 @@ export const getSignedFileUrl = async (key, expiresIn = 3600) => {
 
   return await getSignedUrl(s3Client, command, { expiresIn });
 };
+
+
+
+// export const getSignedFileUrl = async (key, expiresIn = 3600, inline = true) => {
+//   const command = new GetObjectCommand({
+//     Bucket: process.env.AWS_S3_BUCKET,
+//     Key: key,
+
+//     // 👇 THIS IS THE KEY PART
+//     ...(inline && {
+//       ResponseContentDisposition: "inline",
+//     }),
+//   });
+
+//   return await getSignedUrl(s3Client, command, { expiresIn });
+// };
+
+
+// to download inline will be false

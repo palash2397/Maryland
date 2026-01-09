@@ -135,6 +135,8 @@ export const deleteLessonHandle = async (req, res) => {
     }
 
     const data = await Lesson.findByIdAndDelete(id);
+    await Quiz.deleteMany({ lessonId: id });
+    await Quest.deleteMany({ lessonId: id });
     return res.status(200).json(new ApiResponse(200, data, Msg.DATA_DELETED));
   } catch (error) {
     console.error("Error deleting lesson:", error);
@@ -194,6 +196,22 @@ export const quizzHandle = async (req, res) => {
     return res.status(201).json(new ApiResponse(201, quiz, Msg.DATA_ADDED));
   } catch (error) {
     console.error("Error creating quiz:", error);
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+};
+
+export const deleteQuizzHandle = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const quiz = await Quiz.findOne({ _id: id, teacherId: req.user.id });
+    if (!quiz) {
+      return res.status(404).json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND));
+    }
+    
+    await Quiz.findByIdAndDelete(id);
+    return res.status(200).json(new ApiResponse(200, {}, Msg.DATA_DELETED));
+  } catch (error) {
+    console.error("Error deleting quest:", error);
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };

@@ -6,8 +6,10 @@ import { Msg } from "../../utils/responseMsg.js";
 import {
   generateRandomString,
   getExpirationTime,
-  deleteOldImages,
+  deleteOldImages
 } from "../../utils/helper.js";
+
+import { getSignedFileUrl } from "../../utils/s3SignedUrl.js";
 import {
   sendVerificationMail,
   sendForgotPasswordMail,
@@ -293,6 +295,7 @@ export const resetPasswordHandle = async (req, res) => {
 };
 
 export const updateProfileHandle = async (req, res) => {
+  let profileImage = req.file?.key || null;
   try {
     const { firstName, lastName, userName, mobileNumber, age, gender, grade } =
       req.body;
@@ -339,17 +342,11 @@ export const updateProfileHandle = async (req, res) => {
     user.userName = userName || user.userName;
     user.gender = gender || user.gender;
     user.grade = grade || user.grade;
-
-    if (req.file) {
-      deleteOldImages("students/profile", user.avatar);
-      user.avatar = req.file.filename;
-    }
+    user.avatar = profileImage || user.avatar;
+   
 
     await user.save();
 
-    user.avatar = user.avatar
-      ? `${process.env.BASE_URL}/student/profile/${user.avatar}`
-      : `${process.env.DEFAULT_PROFILE_PIC}`;
 
     res.status(200).json(new ApiResponse(200, user, Msg.DATA_UPDATED));
   } catch (error) {
@@ -369,9 +366,7 @@ export const profileHandle = async (req, res) => {
       return res.status(404).json(new ApiResponse(404, {}, Msg.USER_NOT_FOUND));
     }
 
-    user.avatar = user.avatar
-      ? `${process.env.BASE_URL}/students/profile/${user.avatar}`
-      : `${process.env.DEFAULT_PROFILE_PIC}`;
+    user.avatar = user.avatar ? await getSignedFileUrl(user.avatar) : null;
 
     console.log(`user jprofile success --------->`);
     res.status(200).json(new ApiResponse(200, user, Msg.DATA_FETCHED));
