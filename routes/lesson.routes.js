@@ -13,6 +13,7 @@ import {
   getQuizzHandle,
   getQuizByIdHandler,
   updateQuizHandler,
+  deleteQuizHandler,
 } from "../controllers/teacher/lesson.controller.js";
 
 const lessonRouter = Router();
@@ -22,6 +23,7 @@ lessonRouter.get("/all", auth, allLessonHandle);
 lessonRouter.post("/quizz", auth, quizzHandle);
 lessonRouter.get("/get-quizz", auth, getQuizzHandle);
 lessonRouter.get("/get-quizz/:quizId", auth, getQuizByIdHandler);
+lessonRouter.delete("/delete-quizz/:quizId", auth, deleteQuizHandler);
 lessonRouter.put("/update-quizz/:quizId", auth, updateQuizHandler);
 lessonRouter.delete("/delete/:id", auth, deleteLessonHandle);
 

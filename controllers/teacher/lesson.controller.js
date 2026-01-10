@@ -279,21 +279,33 @@ export const updateQuizHandler = async (req, res) => {
   }
 };
 
-export const deleteQuizzHandle = async (req, res) => {
+export const deleteQuizHandler = async (req, res) => {
   try {
-    const { id } = req.params;
-    const quiz = await Quiz.findOne({ _id: id, teacherId: req.user.id });
+    const { quizId } = req.params;
+
+    // Find and delete in ONE step (secure)
+    const quiz = await Quiz.findOneAndDelete({
+      _id: quizId,
+      teacherId: req.user.id,
+    });
+
     if (!quiz) {
-      return res.status(404).json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND));
+      return res
+        .status(404)
+        .json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND));
     }
-    
-    await Quiz.findByIdAndDelete(id);
-    return res.status(200).json(new ApiResponse(200, {}, Msg.DATA_DELETED));
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, {}, Msg.DATA_DELETED));
   } catch (error) {
-    console.error("Error deleting quest:", error);
-    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+    console.error("Error deleting quiz:", error);
+    return res
+      .status(500)
+      .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
+
 
 export const createQuestHandle = async (req, res) => {
   let thumbnailPath = null;
