@@ -251,8 +251,7 @@ export const getQuizByIdHandler = async (req, res) => {
 
 export const updateQuizHandler = async (req, res) => {
   try {
-    const { quizId } = req.params;
-    const { title, questions, isPublished } = req.body;
+    const { title, questions, isPublished , quizId} = req.body;
     const quiz = await Quiz.findOne({
       _id: quizId,
       teacherId: req.user.id,
