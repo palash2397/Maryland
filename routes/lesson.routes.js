@@ -10,6 +10,7 @@ import {
   createQuestHandle,
   deleteQuestHandle,
   getQuestsHandle,
+  getQuizzHandle,
 } from "../controllers/teacher/lesson.controller.js";
 
 const lessonRouter = Router();
@@ -17,6 +18,7 @@ const lessonRouter = Router();
 lessonRouter.post("/create", auth, uploadLessonFiles, createLessonHandle);
 lessonRouter.get("/all", auth, allLessonHandle);
 lessonRouter.post("/quizz", auth, quizzHandle);
+lessonRouter.get("/get-quizz", auth, getQuizzHandle);
 lessonRouter.delete("/delete/:id", auth, deleteLessonHandle);
 
 lessonRouter.post("/quest", auth, uploadQuestThumbnail, createQuestHandle);

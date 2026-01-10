@@ -200,6 +200,28 @@ export const quizzHandle = async (req, res) => {
   }
 };
 
+export const getQuizzHandle = async (req, res) => {
+  try {
+    const quizzes = await Quiz.find({ teacherId: req.user.id })
+      .populate("lessonId", "title")
+      .sort({ createdAt: -1 });
+
+    if (!quizzes.length) {
+      return res
+        .status(404)
+        .json(new ApiResponse(404, [], Msg.DATA_NOT_FOUND));
+    }
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, quizzes, Msg.DATA_FETCHED));
+  } catch (error) {
+    console.error("Error fetching quizzes:", error);
+    return res
+      .status(500)
+      .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+};
 export const deleteQuizzHandle = async (req, res) => {
   try {
     const { id } = req.params;
