@@ -11,6 +11,8 @@ import {
   deleteQuestHandle,
   getQuestsHandle,
   getQuizzHandle,
+  getQuizByIdHandler,
+  updateQuizHandler,
 } from "../controllers/teacher/lesson.controller.js";
 
 const lessonRouter = Router();
@@ -19,6 +21,8 @@ lessonRouter.post("/create", auth, uploadLessonFiles, createLessonHandle);
 lessonRouter.get("/all", auth, allLessonHandle);
 lessonRouter.post("/quizz", auth, quizzHandle);
 lessonRouter.get("/get-quizz", auth, getQuizzHandle);
+lessonRouter.get("/get-quizz/:quizId", auth, getQuizByIdHandler);
+lessonRouter.put("/update-quizz/:quizId", auth, updateQuizHandler);
 lessonRouter.delete("/delete/:id", auth, deleteLessonHandle);
 
 lessonRouter.post("/quest", auth, uploadQuestThumbnail, createQuestHandle);

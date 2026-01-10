@@ -222,6 +222,64 @@ export const getQuizzHandle = async (req, res) => {
       .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
+
+export const getQuizByIdHandler = async (req, res) => {
+  try {
+    const { quizId } = req.params;
+
+    const quiz = await Quiz.findOne({
+      _id: quizId,
+      teacherId: req.user.id,
+    }).populate("lessonId", "title");
+
+    if (!quiz) {
+      return res
+        .status(404)
+        .json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND));
+    }
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, quiz, Msg.DATA_FETCHED));
+  } catch (error) {
+    console.error("Error fetching quiz by id:", error);
+    return res
+      .status(500)
+      .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+};
+
+export const updateQuizHandler = async (req, res) => {
+  try {
+    const { quizId } = req.params;
+    const { title, questions, isPublished } = req.body;
+    const quiz = await Quiz.findOne({
+      _id: quizId,
+      teacherId: req.user.id,
+    });
+
+    if (!quiz) {
+      return res
+        .status(404)
+        .json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND));
+    }
+
+    // Update only provided fields
+    if (title !== undefined) quiz.title = title;
+    if (questions !== undefined) quiz.questions = questions;
+    if (isPublished !== undefined) quiz.isPublished = isPublished;
+    await quiz.save();
+    return res
+      .status(200)
+      .json(new ApiResponse(200, quiz, Msg.DATA_UPDATED));
+  } catch (error) {
+    console.error("Error updating quiz:", error);
+    return res
+      .status(500)
+      .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+};
+
 export const deleteQuizzHandle = async (req, res) => {
   try {
     const { id } = req.params;
