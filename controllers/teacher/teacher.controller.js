@@ -1,5 +1,6 @@
 import Joi from "joi";
 import Jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { Msg } from "../../utils/responseMsg.js";
@@ -19,6 +20,7 @@ import Student from "../../models/student/student.js";
 import Lesson from "../../models/lesson/lesson.js";
 import Quiz from "../../models/quizz/quizz.js";
 import Quest from "../../models/quest/quest.js";
+import TeacherReview from "../../models/review/review.js";
 
 export const registerHandle = async (req, res) => {
   let certificatePath = null;
@@ -389,6 +391,25 @@ export const changePasswordHandle = async (req, res) => {
   }
 };
 
+export const getTeacherRatingSummary = async (teacherId) => {
+  const result = await TeacherReview.aggregate([
+    {
+      $match: {
+        teacherId: new mongoose.Types.ObjectId(teacherId),
+      },
+    },
+    {
+      $group: {
+        _id: "$teacherId",
+        avgRating: { $avg: "$rating" },
+        totalReviews: { $sum: 1 },
+      },
+    },
+  ]);
+
+  return result[0] || { avgRating: 0, totalReviews: 0 };
+};
+
 export const myProfileHandle = async (req, res) => {
   try {
     const teacher = await Teacher.findById(req.user.id)
@@ -402,6 +423,7 @@ export const myProfileHandle = async (req, res) => {
     const lessonCount = await Lesson.countDocuments({ teacherId: req.user.id });
     const quizCount = await Quiz.countDocuments({ teacherId: req.user.id });
     const questCount = await Quest.countDocuments({ teacherId: req.user.id });
+    const ratingSummary = await getTeacherRatingSummary(req.user.id);
     // Handle certificate URL
     let certificateUrl = null;
     if (teacher.certificate?.key) {
@@ -414,7 +436,8 @@ export const myProfileHandle = async (req, res) => {
       studentCount,
       lessonCount,
       quizCount,
-      questCount
+      questCount,
+      ratingSummary,
     };
     return res.status(200).json(new ApiResponse(200, response, Msg.DATA_FETCHED));
   } catch (error) {
@@ -422,6 +445,8 @@ export const myProfileHandle = async (req, res) => {
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
+
+
 export const dashboardHandle = async (req, res) => {
   try {
     const studentCount = await Student.countDocuments();
