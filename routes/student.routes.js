@@ -8,7 +8,12 @@ import {
   resetPasswordHandle,
   updateProfileHandle,
   changePasswordHandle,
-  profileHandle
+  profileHandle,
+  allLessonsHandle,
+  lessonByIdHandle,
+  addTeacherReviewHandle,
+  myTeacherReviewsHandle,
+  updateTeacherReviewHandle
 } from "../controllers/student/student.controller.js";
 import { auth } from "../middlewares/auth.js";
 import { setUploadPath } from "../utils/helper.js";
@@ -26,5 +31,12 @@ studentRouter.post("/reset-password", resetPasswordHandle);
 studentRouter.put("/profile/update", auth, uploadProfileImage, updateProfileHandle);
 studentRouter.get("/profile", auth, profileHandle);
 studentRouter.put("/change-password", auth, changePasswordHandle);
+
+studentRouter.get("/lessons", auth, allLessonsHandle);
+studentRouter.get("/lesson/:id", auth, lessonByIdHandle);
+
+studentRouter.post("/teacher-review", auth, addTeacherReviewHandle);
+studentRouter.get("/teacher-review/:id", auth, myTeacherReviewsHandle);
+studentRouter.put("/teacher-review/:id", auth, updateTeacherReviewHandle);
 
 export default studentRouter;

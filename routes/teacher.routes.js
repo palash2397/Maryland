@@ -8,7 +8,8 @@ import {
   verifyPasswordHandle,
   resetPasswordHandle,
   changePasswordHandle,
-  myProfileHandle
+  myProfileHandle,
+  dashboardHandle
 } from "../controllers/teacher/teacher.controller.js";
 import { setUploadPath } from "../utils/helper.js";
 import { auth } from "../middlewares/auth.js";
@@ -29,7 +30,7 @@ teacherRouter.get("/verify-password/:token", verifyPasswordHandle);
 teacherRouter.post("/reset-password", resetPasswordHandle);
 teacherRouter.put("/change-password", auth, changePasswordHandle);
 teacherRouter.get("/my-profile", auth, myProfileHandle);
-
+teacherRouter.get("/dashboard", auth, dashboardHandle);
 
 
 export default teacherRouter;

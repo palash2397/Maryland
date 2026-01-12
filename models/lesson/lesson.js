@@ -36,6 +36,11 @@ const lessonSchema = new mongoose.Schema(
       type: String,
       required: false,
       default: null
+    },
+    status: {
+      type: String,
+      enum: ["draft", "published"],
+      default: "published"
     }
   },
   {

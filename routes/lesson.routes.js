@@ -14,22 +14,31 @@ import {
   getQuizByIdHandler,
   updateQuizHandler,
   deleteQuizHandler,
+  updateQuestHandler,
+  questByIdHandle,
+  searchLessonsHandler
 } from "../controllers/teacher/lesson.controller.js";
 
 const lessonRouter = Router();
 
 lessonRouter.post("/create", auth, uploadLessonFiles, createLessonHandle);
 lessonRouter.get("/all", auth, allLessonHandle);
+lessonRouter.get("/search", auth, searchLessonsHandler);
+lessonRouter.delete("/delete/:id", auth, deleteLessonHandle);
+
+
 lessonRouter.post("/quizz", auth, quizzHandle);
 lessonRouter.get("/get-quizz", auth, getQuizzHandle);
 lessonRouter.get("/get-quizz/:quizId", auth, getQuizByIdHandler);
 lessonRouter.delete("/delete-quizz/:quizId", auth, deleteQuizHandler);
-lessonRouter.put("/update-quizz/:quizId", auth, updateQuizHandler);
-lessonRouter.delete("/delete/:id", auth, deleteLessonHandle);
+lessonRouter.put("/update-quizz", auth, updateQuizHandler);
+
 
 lessonRouter.post("/quest", auth, uploadQuestThumbnail, createQuestHandle);
 lessonRouter.delete("/quest/:id", auth, deleteQuestHandle);
+lessonRouter.get("/quest/:id", auth, questByIdHandle);
 lessonRouter.get("/quest", auth, getQuestsHandle);
+lessonRouter.put("/update-quest", auth, uploadQuestThumbnail, updateQuestHandler);
 
 // lessonRouter.post("/test-upload", uploadLessonFiles, (req, res) => {
 //   try {

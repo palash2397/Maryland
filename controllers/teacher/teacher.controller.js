@@ -15,6 +15,10 @@ import {
   sendForgotPasswordMail,
 } from "../../utils/email.js";
 import Teacher from "../../models/teacher/teacher.js";
+import Student from "../../models/student/student.js";
+import Lesson from "../../models/lesson/lesson.js";
+import Quiz from "../../models/quizz/quizz.js";
+import Quest from "../../models/quest/quest.js";
 
 export const registerHandle = async (req, res) => {
   let certificatePath = null;
@@ -387,25 +391,54 @@ export const changePasswordHandle = async (req, res) => {
 
 export const myProfileHandle = async (req, res) => {
   try {
-    const teacher = await Teacher.findById(req.user.id).select(
-      "-password -__v -passwordResetToken -linkExpireAt -actToken -createdAt -updatedAt"
-    );
-
+    const teacher = await Teacher.findById(req.user.id)
+      .select("-password -__v -passwordResetToken -linkExpireAt -actToken -createdAt -updatedAt")
+      .lean(); 
     if (!teacher) {
       return res.status(404).json(new ApiResponse(404, {}, Msg.USER_NOT_FOUND));
     }
-
+    // Get counts
+    const studentCount = await Student.countDocuments();
+    const lessonCount = await Lesson.countDocuments({ teacherId: req.user.id });
+    const quizCount = await Quiz.countDocuments({ teacherId: req.user.id });
+    const questCount = await Quest.countDocuments({ teacherId: req.user.id });
+    // Handle certificate URL
+    let certificateUrl = null;
     if (teacher.certificate?.key) {
-      teacher.certificate = {
-        url: await getSignedFileUrl(teacher.certificate.key),
-      };
-    } else {
-      teacher.certificate = null;
+      certificateUrl = await getSignedFileUrl(teacher.certificate.key);
     }
+    // Create response object
+    const response = {
+      ...teacher,
+      certificate: certificateUrl ? { key: certificateUrl } : null,
+      studentCount,
+      lessonCount,
+      quizCount,
+      questCount
+    };
+    return res.status(200).json(new ApiResponse(200, response, Msg.DATA_FETCHED));
+  } catch (error) {
+    console.error("Error getting teacher:", error);
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+};
+export const dashboardHandle = async (req, res) => {
+  try {
+    const studentCount = await Student.countDocuments();
+
+    const lessonCount = await Lesson.countDocuments({ teacherId: req.user.id });
+    const quizCount = await Quiz.countDocuments({ teacherId: req.user.id });
+    const questCount = await Quest.countDocuments({ teacherId: req.user.id });
 
     return res
       .status(200)
-      .json(new ApiResponse(200, teacher, Msg.DATA_FETCHED));
+      .json(
+        new ApiResponse(
+          200,
+          { studentCount, lessonCount, quizCount, questCount },
+          Msg.DATA_FETCHED
+        )
+      );
   } catch (error) {
     console.error("Error getting teacher:", error);
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));

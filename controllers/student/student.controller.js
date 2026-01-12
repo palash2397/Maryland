@@ -6,8 +6,9 @@ import { Msg } from "../../utils/responseMsg.js";
 import {
   generateRandomString,
   getExpirationTime,
-  deleteOldImages
+  deleteOldImages,
 } from "../../utils/helper.js";
+import Teacher from "../../models/teacher/teacher.js";
 
 import { getSignedFileUrl } from "../../utils/s3SignedUrl.js";
 import {
@@ -16,6 +17,8 @@ import {
 } from "../../utils/email.js";
 
 import Student from "../../models/student/student.js";
+import Lesson from "../../models/lesson/lesson.js";
+import TeacherReview from "../../models/review/review.js";
 
 export const registerHandle = async (req, res) => {
   try {
@@ -29,9 +32,12 @@ export const registerHandle = async (req, res) => {
         "string.min": "Password must be at least 8 characters long",
         "string.required": "Password is required",
       }),
-      confirmPassword: Joi.string().valid(Joi.ref("password")).required().messages({
-        "any.only": "Passwords do not match",
-      }),
+      confirmPassword: Joi.string()
+        .valid(Joi.ref("password"))
+        .required()
+        .messages({
+          "any.only": "Passwords do not match",
+        }),
     });
     const { error } = schema.validate(req.body);
 
@@ -86,7 +92,9 @@ export const registerHandle = async (req, res) => {
 
     console.log("Verification email sent successfully");
 
-    return res.status(201).json(new ApiResponse(201, {}, Msg.EMAIL_VERIFICATION_SENT));
+    return res
+      .status(201)
+      .json(new ApiResponse(201, {}, Msg.EMAIL_VERIFICATION_SENT));
   } catch (error) {
     console.error("Error in registerHandle:", error);
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
@@ -343,10 +351,8 @@ export const updateProfileHandle = async (req, res) => {
     user.gender = gender || user.gender;
     user.grade = grade || user.grade;
     user.avatar = profileImage || user.avatar;
-   
 
     await user.save();
-
 
     res.status(200).json(new ApiResponse(200, user, Msg.DATA_UPDATED));
   } catch (error) {
@@ -417,6 +423,156 @@ export const changePasswordHandle = async (req, res) => {
     return res.status(200).json(new ApiResponse(200, {}, Msg.PASSWORD_CHANGED));
   } catch (error) {
     console.error("Error changing password:", error);
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+};
+
+export const allLessonsHandle = async (req, res) => {
+  try {
+    const lessons = await Lesson.find({ status: "published" }).lean();
+    if (!lessons || lessons.length === 0) {
+      return res.status(404).json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND));
+    }
+
+    const lessonsWithSignedUrls = await Promise.all(
+      lessons.map(async (lesson) => {
+        lesson.video = lesson.video
+          ? await getSignedFileUrl(lesson.video)
+          : null;
+        lesson.thumbnail = lesson.thumbnail
+          ? await getSignedFileUrl(lesson.thumbnail)
+          : null;
+        return lesson;
+      })
+    );
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, lessonsWithSignedUrls, Msg.DATA_FETCHED));
+  } catch (error) {
+    console.error("Error fetching lessons:", error);
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+};
+
+export const lessonByIdHandle = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const lesson = await Lesson.findOne({
+      _id: id,
+      status: "published",
+    }).lean();
+    if (!lesson) {
+      return res.status(404).json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND));
+    }
+    lesson.video = lesson.video ? await getSignedFileUrl(lesson.video) : null;
+    lesson.thumbnail = lesson.thumbnail
+      ? await getSignedFileUrl(lesson.thumbnail)
+      : null;
+    return res.status(200).json(new ApiResponse(200, lesson, Msg.DATA_FETCHED));
+  } catch (error) {
+    console.error("Error fetching lesson:", error);
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+};
+
+export const addTeacherReviewHandle = async (req, res) => {
+  try {
+    const { teacherId, rating, review } = req.body;
+
+    const teacher = await Teacher.findById(teacherId);
+    if (!teacher) {
+      return res.status(404).json(new ApiResponse(404, {}, Msg.USER_NOT_FOUND));
+    }
+
+    const existingReview = await TeacherReview.findOne({
+      teacherId,
+      studentId: req.user.id,
+    });
+
+    if (existingReview) {
+      return res
+        .status(400)
+        .json(new ApiResponse(400, {}, Msg.DATA_ALREADY_EXISTS));
+    }
+
+    await TeacherReview.create({
+      teacherId,
+      studentId: req.user.id,
+      rating,
+      review,
+    });
+
+    return res.status(201).json(new ApiResponse(201, {}, Msg.DATA_ADDED));
+  } catch (error) {
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+};
+
+export const myTeacherReviewsHandle = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const schema = Joi.object({
+      id: Joi.string().required(),
+    });
+    const { error } = schema.validate({ id });
+    if (error) {
+      return res
+        .status(400)
+        .json(new ApiResponse(400, {}, error.details[0].message));
+    }
+    const reviews = await TeacherReview.find({
+      teacherId: id,
+      studentId: req.user.id,
+    }).populate("studentId", "firstName lastName avatar");
+
+    const updatedReviews = await Promise.all(
+      reviews.map(async (review) => {
+        review.studentId.avatar = review.studentId.avatar
+          ? await getSignedFileUrl(review.studentId.avatar)
+          : `${process.env.DEFAULT_PROFILE_PIC}`;
+        return review;
+      })
+    );
+    return res
+      .status(200)
+      .json(new ApiResponse(200, updatedReviews, Msg.DATA_FETCHED));
+  } catch (error) {
+    console.error("Error fetching teacher reviews:", error);
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+};
+
+export const updateTeacherReviewHandle = async (req, res) => {
+  try {
+    const { id, rating, review } = req.body;
+    const schema = Joi.object({
+      id: Joi.string().required(),
+      rating: Joi.number().optional(),
+      review: Joi.string().optional(),
+    });
+    const { error } = schema.validate({ id, rating, review });
+    if (error) {
+      return res
+        .status(400)
+        .json(new ApiResponse(400, {}, error.details[0].message));
+    }
+
+    const data = await TeacherReview.findOne({
+      _id: id,
+      studentId: req.user.id,
+    });
+    if (!data) {
+      return res.status(404).json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND));
+    }
+
+    data.rating = rating || data.rating;
+    data.review = review || data.review;
+    await data.save();
+
+    return res.status(200).json(new ApiResponse(200, data, Msg.DATA_UPDATED));
+  } catch (error) {
+    console.error("Error updating teacher review:", error);
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };

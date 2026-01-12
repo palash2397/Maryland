@@ -144,6 +144,66 @@ export const deleteLessonHandle = async (req, res) => {
   }
 };
 
+export const searchLessonsHandler = async (req, res) => {
+  try {
+     const teacherId = req.user.id;
+    const { search, status, page = 1, limit = 10 } = req.query;
+
+    const filter = { teacherId };
+
+    
+    if (search) {
+      filter.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { topic: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    if (status && status !== "all") {
+      filter.status = status;
+    }
+
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const lessons = await Lesson.find(filter)
+      .sort({ updatedAt: -1 }) // latest first
+      .skip(skip)
+      .limit(Number(limit))
+      .lean();
+
+    const total = await Lesson.countDocuments(filter);
+
+
+    lessons.map(async (Les)=>{
+      Les.video = Les.video ? await getSignedFileUrl(Les.video) : null;
+      Les.thumbnail = Les.thumbnail ? await getSignedFileUrl(Les.thumbnail) : null;
+    })
+
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          lessons,
+          pagination: {
+            total,
+            page: Number(page),
+            limit: Number(limit),
+            totalPages: Math.ceil(total / limit),
+          },
+        },
+        Msg.DATA_FETCHED
+      )
+    );
+
+  } catch (error) {
+    console.error("Error searching lessons:", error);
+    return res
+      .status(500)
+      .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+};
+
+
 export const quizzHandle = async (req, res) => {
   try {
     const { title, lessonId, questions } = req.body;
@@ -207,9 +267,7 @@ export const getQuizzHandle = async (req, res) => {
       .sort({ createdAt: -1 });
 
     if (!quizzes.length) {
-      return res
-        .status(404)
-        .json(new ApiResponse(404, [], Msg.DATA_NOT_FOUND));
+      return res.status(404).json(new ApiResponse(404, [], Msg.DATA_NOT_FOUND));
     }
 
     return res
@@ -217,9 +275,7 @@ export const getQuizzHandle = async (req, res) => {
       .json(new ApiResponse(200, quizzes, Msg.DATA_FETCHED));
   } catch (error) {
     console.error("Error fetching quizzes:", error);
-    return res
-      .status(500)
-      .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
 
@@ -233,49 +289,44 @@ export const getQuizByIdHandler = async (req, res) => {
     }).populate("lessonId", "title");
 
     if (!quiz) {
-      return res
-        .status(404)
-        .json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND));
+      return res.status(404).json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND));
     }
 
-    return res
-      .status(200)
-      .json(new ApiResponse(200, quiz, Msg.DATA_FETCHED));
+    return res.status(200).json(new ApiResponse(200, quiz, Msg.DATA_FETCHED));
   } catch (error) {
     console.error("Error fetching quiz by id:", error);
-    return res
-      .status(500)
-      .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
 
 export const updateQuizHandler = async (req, res) => {
   try {
-    const { title, questions, isPublished , quizId} = req.body;
+    const { quizId, title, questions, isPublished } = req.body;
+
     const quiz = await Quiz.findOne({
       _id: quizId,
       teacherId: req.user.id,
     });
 
     if (!quiz) {
-      return res
-        .status(404)
-        .json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND));
+      return res.status(404).json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND));
     }
 
-    // Update only provided fields
+    // Update basic fields
     if (title !== undefined) quiz.title = title;
-    if (questions !== undefined) quiz.questions = questions;
     if (isPublished !== undefined) quiz.isPublished = isPublished;
+
+    // Update questions (add / edit / delete)
+    if (Array.isArray(questions)) {
+      quiz.questions = questions;
+    }
+
     await quiz.save();
-    return res
-      .status(200)
-      .json(new ApiResponse(200, quiz, Msg.DATA_UPDATED));
+
+    return res.status(200).json(new ApiResponse(200, quiz, Msg.DATA_UPDATED));
   } catch (error) {
     console.error("Error updating quiz:", error);
-    return res
-      .status(500)
-      .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
 
@@ -290,22 +341,15 @@ export const deleteQuizHandler = async (req, res) => {
     });
 
     if (!quiz) {
-      return res
-        .status(404)
-        .json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND));
+      return res.status(404).json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND));
     }
 
-    return res
-      .status(200)
-      .json(new ApiResponse(200, {}, Msg.DATA_DELETED));
+    return res.status(200).json(new ApiResponse(200, {}, Msg.DATA_DELETED));
   } catch (error) {
     console.error("Error deleting quiz:", error);
-    return res
-      .status(500)
-      .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
-
 
 export const createQuestHandle = async (req, res) => {
   let thumbnailPath = null;
@@ -317,7 +361,16 @@ export const createQuestHandle = async (req, res) => {
     };
   }
   try {
-    const { title, description, difficulty, rewardPoints, numberOfTasks, timeLimit, lessonId, quizId} = req.body;
+    const {
+      title,
+      description,
+      difficulty,
+      rewardPoints,
+      numberOfTasks,
+      timeLimit,
+      lessonId,
+      quizId,
+    } = req.body;
 
     const schema = Joi.object({
       title: Joi.string().required(),
@@ -327,7 +380,7 @@ export const createQuestHandle = async (req, res) => {
       numberOfTasks: Joi.number().required().min(1),
       timeLimit: Joi.number().required().min(1),
       lessonId: Joi.string().optional(),
-      quizId: Joi.string().optional()
+      quizId: Joi.string().optional(),
     });
 
     const { error } = schema.validate(req.body);
@@ -337,7 +390,10 @@ export const createQuestHandle = async (req, res) => {
         .json(new ApiResponse(400, {}, error.details[0].message));
     }
 
-    const lesson = await Lesson.findOne({ _id: lessonId, teacherId: req.user.id });
+    const lesson = await Lesson.findOne({
+      _id: lessonId,
+      teacherId: req.user.id,
+    });
     if (!lesson) {
       return res.status(404).json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND));
     }
@@ -360,15 +416,10 @@ export const createQuestHandle = async (req, res) => {
       thumbnail: thumbnailPath || null,
     });
 
-    return res
-      .status(201)
-      .json(new ApiResponse(201, quest, Msg.DATA_ADDED));
-
+    return res.status(201).json(new ApiResponse(201, quest, Msg.DATA_ADDED));
   } catch (error) {
     console.error("Error creating quest:", error);
-    return res
-      .status(500)
-      .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
 
@@ -381,7 +432,7 @@ export const deleteQuestHandle = async (req, res) => {
     }
     await deleteFromS3(quest.thumbnail?.key);
     await Quest.deleteOne({ _id: id, teacherId: req.user.id });
-    return res.status(200).json(new ApiResponse(200, {id}, Msg.DATA_DELETED));
+    return res.status(200).json(new ApiResponse(200, { id }, Msg.DATA_DELETED));
   } catch (error) {
     console.error("Error deleting quest:", error);
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
@@ -394,9 +445,126 @@ export const getQuestsHandle = async (req, res) => {
     if (!quests || quests.length === 0) {
       return res.status(404).json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND));
     }
-    return res.status(200).json(new ApiResponse(200, quests, Msg.DATA_FETCHED));
+
+    const questsWithSignedUrls = await Promise.all(
+      quests.map(async (quest) => {
+        if (quest.thumbnail?.key) {
+          quest.thumbnail.key = await getSignedFileUrl(quest.thumbnail.key);
+        }
+        return quest;
+      })
+    );
+    
+    return res.status(200).json(new ApiResponse(200, questsWithSignedUrls, Msg.DATA_FETCHED));
   } catch (error) {
     console.error("Error getting quests:", error);
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
+
+export const questByIdHandle = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const quest = await Quest.findOne({ _id: id, teacherId: req.user.id });
+    if (!quest) {
+      return res.status(404).json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND));
+    }
+
+    quest.thumbnail.key = await getSignedFileUrl(quest.thumbnail?.key);
+    return res.status(200).json(new ApiResponse(200, quest, Msg.DATA_FETCHED));
+  } catch (error) {
+    console.error("Error getting quest:", error);
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+};
+
+export const updateQuestHandler = async (req, res) => {
+  try {
+    const {
+      id,
+      title,
+      description,
+      difficulty,
+      rewardPoints,
+      numberOfTasks,
+      timeLimit,
+      lessonId,
+      quizId,
+    } = req.body;
+
+    const schema = Joi.object({
+      id: Joi.string().optional(),
+      title: Joi.string().optional(),
+      description: Joi.string().optional(),
+      difficulty: Joi.string().optional(),
+      rewardPoints: Joi.number().optional(),
+      numberOfTasks: Joi.number().optional(),
+      timeLimit: Joi.number().optional(),
+      lessonId: Joi.string().optional(),
+      quizId: Joi.string().optional(),
+    });
+
+    const { error } = schema.validate({
+      id,
+      title,
+      description,
+      difficulty,
+      rewardPoints,
+      numberOfTasks,
+      timeLimit,
+      lessonId,
+      quizId,
+    });
+    if (error) {
+      return res
+        .status(400)
+        .json(new ApiResponse(400, {}, error.details[0].message));
+    }
+
+    const quest = await Quest.findOne({ _id: id, teacherId: req.user.id });
+    if (!quest) {
+      return res.status(404).json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND));
+    }
+
+    const quizz = await Quiz.findOne({ _id: quizId, teacherId: req.user.id });
+    if (!quizz) {
+      return res.status(404).json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND));
+    }
+
+    const lesson = await Lesson.findOne({
+      _id: lessonId,
+      teacherId: req.user.id,
+    });
+    if (!lesson) {
+      return res.status(404).json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND));
+    }
+
+    quest.title = title || quest.title;
+    quest.description = description || quest.description;
+    quest.difficulty = difficulty || quest.difficulty;
+    quest.rewardPoints = rewardPoints || quest.rewardPoints;
+    quest.numberOfTasks = numberOfTasks || quest.numberOfTasks;
+    quest.timeLimit = timeLimit || quest.timeLimit;
+    quest.lessonId = lessonId || quest.lessonId;
+    quest.quizId = quizId || quest.quizId;
+    if (req.file) {
+      await deleteFromS3(quest.thumbnail?.key);
+      quest.thumbnail = {
+        url: req.file.location,
+        key: req.file.key,
+      };
+    } else {
+      quest.thumbnail = quest.thumbnail;
+    }
+
+    await quest.save();
+
+    return res.status(200).json(new ApiResponse(200, quest, Msg.DATA_UPDATED));
+  } catch (error) {
+    console.error("Error updating quest:", error);
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+};
+
+
+
