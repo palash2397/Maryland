@@ -8,6 +8,6 @@ const paymentRouter = Router();
 
 paymentRouter.post("/create-payment-intent", auth, createPaymentIntent);
 paymentRouter.post("/confirm-payment-intent/:paymentIntentId", auth, confirmPaymentIntent);
-paymentRouter.post("/webhook", bodyParser.raw({ type: "application/json" }), paymentWebhookHandle);
+// paymentRouter.post("/webhook", bodyParser.raw({ type: "application/json" }), paymentWebhookHandle);
 
 export default paymentRouter;
