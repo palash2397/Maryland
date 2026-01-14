@@ -2,29 +2,37 @@ name: Node.js CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   build:
-
     runs-on: self-hosted
 
     strategy:
       matrix:
         node-version: [22.x]
-        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-    - run: npm ci
-    - run: |
-          touch .env 
-          echo "${{ secrets.PROD_ENV_FILE }}" | tr -d '\r' > .env
-          chmod 600 .env  
-          ls -lah .env 
-    - run: pm2 restart maryland-backend
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create .env file safely
+        run: |
+          rm -f .env
+          printf "%s" "${{ secrets.PROD_ENV_FILE }}" > .env
+          chmod 600 .env
+          echo ".env file created"
+
+      - name: Restart backend with PM2 (reload env)
+        run: |
+          pm2 delete maryland-backend || true
+          pm2 start index.js --name maryland-backend
