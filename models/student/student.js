@@ -35,7 +35,7 @@ const studentSchema = new mongoose.Schema(
       type: String,
       enum: ["Male", "Female", "Other"],
       trim: true, // This will automatically trim any whitespace
-      default: null
+      default: null,
     },
 
     age: {
@@ -97,6 +97,11 @@ const studentSchema = new mongoose.Schema(
 
     linkExpireAt: {
       type: Date,
+      default: null,
+    },
+
+    fcmToken: {
+      type: String,
       default: null,
     },
   },
