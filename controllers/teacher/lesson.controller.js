@@ -113,21 +113,11 @@ export const allLessonHandle = async (req, res) => {
     const { id } = req.body;
     const teacherId = req.user.id;
 
-    // ---------- SINGLE LESSON WITH CHAPTERS ----------
-    if (id) {
-      const lesson = await Lesson.findOne({ _id: id, teacherId })
-        .lean()
-        .select("-__v -updatedAt");
+    /* ---------------- HELPER ---------------- */
+    const formatLessonWithChapters = async (lesson) => {
+      const chapters = await Video.find({ lessonId: lesson._id }).lean();
 
-      if (!lesson) {
-        return res
-          .status(404)
-          .json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND));
-      }
-
-      const chapters = await Video.find({ lessonId: id }).lean();
-
-      const formattedLesson = {
+      return {
         ...lesson,
         thumbnail: lesson.thumbnail
           ? await getSignedFileUrl(lesson.thumbnail, 3600)
@@ -141,13 +131,28 @@ export const allLessonHandle = async (req, res) => {
           }))
         ),
       };
+    };
+
+    /* ---------------- SINGLE LESSON ---------------- */
+    if (id) {
+      const lesson = await Lesson.findOne({ _id: id, teacherId })
+        .lean()
+        .select("-__v -updatedAt");
+
+      if (!lesson) {
+        return res
+          .status(404)
+          .json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND));
+      }
+
+      const data = await formatLessonWithChapters(lesson);
 
       return res
         .status(200)
-        .json(new ApiResponse(200, formattedLesson, Msg.DATA_FETCHED));
+        .json(new ApiResponse(200, data, Msg.DATA_FETCHED));
     }
 
-    // ---------- ALL LESSONS (WITHOUT CHAPTERS) ----------
+    /* ---------------- ALL LESSONS ---------------- */
     const lessons = await Lesson.find({ teacherId }).lean();
 
     if (!lessons.length) {
@@ -156,21 +161,13 @@ export const allLessonHandle = async (req, res) => {
         .json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND));
     }
 
-    const formattedLessons = await Promise.all(
-      lessons.map(async (lesson) => ({
-        ...lesson,
-        thumbnail: lesson.thumbnail
-          ? await getSignedFileUrl(lesson.thumbnail, 3600)
-          : null,
-        video: lesson.video
-          ? await getSignedFileUrl(lesson.video, 3600)
-          : null,
-      }))
+    const data = await Promise.all(
+      lessons.map((lesson) => formatLessonWithChapters(lesson))
     );
 
     return res
       .status(200)
-      .json(new ApiResponse(200, formattedLessons, Msg.DATA_FETCHED));
+      .json(new ApiResponse(200, data, Msg.DATA_FETCHED));
   } catch (error) {
     console.error("Error fetching lessons:", error);
     return res
