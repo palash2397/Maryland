@@ -86,3 +86,57 @@ export const getPlanHandle = async (req, res) => {
 };
 
 
+export const deletePlanHandle = async(req, res)=>{
+    try {
+        const {id} = req.params;
+        const Schema = Joi.object({
+            id: Joi.string().required(),
+        });
+        const { error } = Schema.validate({ id });
+        if (error) {
+            return res.status(400).json(new ApiResponse(400, {}, error.details[0].message));
+        }
+        const plan = await Plan.findByIdAndDelete(id);
+        if (!plan) {
+            return res.status(404).json(new ApiResponse(404, {}, Msg.PLAN_NOT_FOUND));
+        }
+        return res.status(200).json(new ApiResponse(200, {}, Msg.PLAN_DELETE));
+    } catch (error) {
+        console.error("Error deleting plan:", error);
+        return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+    }
+}
+
+export const updatePlanHandle = async(req, res)=>{
+    try {
+        const {id} = req.params;
+        const {name, price, interval, features, description} = req.body;
+        const Schema = Joi.object({
+            name: Joi.string().required(),
+            price: Joi.number().required(),
+            interval: Joi.string().required(),
+            features: Joi.array().required(),
+            description: Joi.string().required(),
+        });
+        const { error } = Schema.validate({ name, price, interval, features, description });
+        if (error) {
+            return res.status(400).json(new ApiResponse(400, {}, error.details[0].message));
+        }
+        const plan = await Plan.findByIdAndUpdate(id, {
+            name: name || plan.name,
+            price: price || plan.price,
+            interval: interval || plan.interval,
+            features: features || plan.features,
+            description: description || plan.description,
+        });
+        if (!plan) {
+            return res.status(404).json(new ApiResponse(404, {}, Msg.PLAN_NOT_FOUND));
+        }
+        return res.status(200).json(new ApiResponse(200, plan, Msg.PLAN_UPDATE));
+    } catch (error) {
+        console.error("Error updating plan:", error);
+        return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+    }
+}
+
+
