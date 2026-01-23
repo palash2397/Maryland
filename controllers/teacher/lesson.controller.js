@@ -61,7 +61,7 @@ export const createChapterHandle = async (req, res) => {
       lessonId: Joi.string().required(),
       description: Joi.string().optional(),
       duration: Joi.number().required(),
-      accessType: Joi.string().valid("free", "premium").default("free"),
+      accessType: Joi.string().valid("free", "pro", "premium").default("free"),
       status: Joi.string().valid("draft", "published").default("published"),
     });
 
