@@ -50,7 +50,63 @@ export const createLessonHandle = async (req, res) => {
   }
 };
 
+export const createChapterHandle = async (req, res) => {
+  try {
+    const { title, lessonId, duration, description, accessType, status } =
+      req.body;
 
+    // Validation
+    const schema = Joi.object({
+      title: Joi.string().required(),
+      lessonId: Joi.string().required(),
+      description: Joi.string().optional(),
+      duration: Joi.number().required(),
+      accessType: Joi.string().valid("free", "premium").default("free"),
+      status: Joi.string().valid("draft", "published").default("published"),
+    });
+
+    const { error } = schema.validate(req.body);
+    if (error) {
+      return res
+        .status(400)
+        .json(new ApiResponse(400, {}, error.details[0].message));
+    }
+
+    console.log("--------->", req.file);
+
+    if (!req.file?.key) {
+      return res.status(400).json(new ApiResponse(400, {}, Msg.DATA_NOT_FOUND));
+    }
+
+    const lesson = await Lesson.findOne({
+      _id: lessonId,
+      teacherId: req.user.id,
+    });
+    if (!lesson) {
+      return res
+        .status(404)
+        .json(new ApiResponse(404, {}, Msg.LESSON_NOT_FOUND));
+    }
+
+    const video = await Video.create({
+      teacherId: req.user.id,
+      lessonId,
+      title,
+      description,
+      duration,
+      accessType,
+      videoUrl: req.file?.key || null,
+      status,
+    });
+
+    return res
+      .status(201)
+      .json(new ApiResponse(201, video, Msg.CHAPTER_CREATED));
+  } catch (error) {
+    console.error("Error creating chapter:", error);
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+};
 
 export const allLessonHandle = async (req, res) => {
   try {
