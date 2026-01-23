@@ -585,3 +585,47 @@ export const updateTeacherReviewHandle = async (req, res) => {
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
+
+
+export const mySubscriptionHandle = async (req, res) => {
+  try {
+    const subscription = await UserSubscription.findOne({
+      userId: req.user.id,
+    }).lean();
+
+   
+    if (!subscription) {
+      return res.status(200).json(
+        new ApiResponse(
+          200,
+          {
+            plan: "free",
+            status: "active",
+            validTill: null,
+          },
+          Msg.SUBSCRIPTION_NOT_FOUND
+        )
+      );
+    }
+
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          plan: subscription.plan,
+          status: subscription.status,
+          validTill: subscription.endDate,
+          cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+        },
+        Msg.SUBSCRIPTION_FETCHED
+      )
+    );
+  } catch (error) {
+    console.error("Error fetching subscription:", error);
+    return res.status(500).json(
+      new ApiResponse(500, {}, Msg.SERVER_ERROR)
+    );
+  }
+};
+
+

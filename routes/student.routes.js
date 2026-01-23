@@ -13,7 +13,8 @@ import {
   lessonByIdHandle,
   addTeacherReviewHandle,
   myTeacherReviewsHandle,
-  updateTeacherReviewHandle
+  updateTeacherReviewHandle,
+  mySubscriptionHandle
 } from "../controllers/student/student.controller.js";
 import { auth } from "../middlewares/auth.js";
 import { setUploadPath } from "../utils/helper.js";
@@ -38,5 +39,7 @@ studentRouter.get("/lesson/:id", auth, lessonByIdHandle);
 studentRouter.post("/teacher-review", auth, addTeacherReviewHandle);
 studentRouter.get("/teacher-review/:id", auth, myTeacherReviewsHandle);
 studentRouter.put("/teacher-review/:id", auth, updateTeacherReviewHandle);
+
+studentRouter.get("/subscription", auth, mySubscriptionHandle);
 
 export default studentRouter;
