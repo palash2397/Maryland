@@ -111,11 +111,11 @@ export const createChapterHandle = async (req, res) => {
 export const allLessonHandle = async (req, res) => {
   try {
     const { id } = req.body;
+    const teacherId = req.user.id;
+
+    // ---------- SINGLE LESSON WITH CHAPTERS ----------
     if (id) {
-      const lesson = await Lesson.findOne({
-        _id: id,
-        teacherId: req.user.id,
-      })
+      const lesson = await Lesson.findOne({ _id: id, teacherId })
         .lean()
         .select("-__v -updatedAt");
 
@@ -125,40 +125,60 @@ export const allLessonHandle = async (req, res) => {
           .json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND));
       }
 
-      const updatedLesson = {
+      const chapters = await Video.find({ lessonId: id }).lean();
+
+      const formattedLesson = {
         ...lesson,
         thumbnail: lesson.thumbnail
           ? await getSignedFileUrl(lesson.thumbnail, 3600)
           : null,
-        video: lesson.video ? await getSignedFileUrl(lesson.video, 3600) : null,
+        chapters: await Promise.all(
+          chapters.map(async (chapter) => ({
+            ...chapter,
+            videoUrl: chapter.videoUrl
+              ? await getSignedFileUrl(chapter.videoUrl, 3600)
+              : null,
+          }))
+        ),
       };
 
       return res
         .status(200)
-        .json(new ApiResponse(200, updatedLesson, Msg.DATA_FETCHED));
-    }
-    const lessons = await Lesson.find({ teacherId: req.user.id }).lean();
-    if (!lessons || lessons.length === 0) {
-      return res.status(404).json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND));
+        .json(new ApiResponse(200, formattedLesson, Msg.DATA_FETCHED));
     }
 
-    const updatedLessons = await Promise.all(
+    // ---------- ALL LESSONS (WITHOUT CHAPTERS) ----------
+    const lessons = await Lesson.find({ teacherId }).lean();
+
+    if (!lessons.length) {
+      return res
+        .status(404)
+        .json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND));
+    }
+
+    const formattedLessons = await Promise.all(
       lessons.map(async (lesson) => ({
         ...lesson,
         thumbnail: lesson.thumbnail
           ? await getSignedFileUrl(lesson.thumbnail, 3600)
           : null,
-        video: lesson.video ? await getSignedFileUrl(lesson.video, 3600) : null,
-      })),
+        video: lesson.video
+          ? await getSignedFileUrl(lesson.video, 3600)
+          : null,
+      }))
     );
+
     return res
       .status(200)
-      .json(new ApiResponse(200, updatedLessons, Msg.DATA_FETCHED));
+      .json(new ApiResponse(200, formattedLessons, Msg.DATA_FETCHED));
   } catch (error) {
     console.error("Error fetching lessons:", error);
-    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+    return res
+      .status(500)
+      .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
+
 
 export const deleteLessonHandle = async (req, res) => {
   try {
