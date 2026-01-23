@@ -3,6 +3,7 @@ import Jwt from "jsonwebtoken";
 
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { Msg } from "../../utils/responseMsg.js";
+import UserSubscription from "../../models/subcription/userSubscription.js";
 import {
   generateRandomString,
   getExpirationTime,
@@ -91,6 +92,14 @@ export const registerHandle = async (req, res) => {
     await sendVerificationMail(firstName, email, token, "student");
 
     console.log("Verification email sent successfully");
+
+    await UserSubscription.create({
+      userId: newStudent._id,
+      plan: "free",
+      status: "active",
+      startDate: new Date(),
+      endDate:null
+    });
 
     return res
       .status(201)
