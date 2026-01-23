@@ -1,6 +1,7 @@
 import stripe from "../../utils/stripe/stripe.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { Msg } from "../../utils/responseMsg.js";
+import Student from "../../models/student/student.js"
 import Joi from "joi";
 
 export const createPaymentIntent = async (req, res) => {
@@ -49,6 +50,52 @@ export const createPaymentIntent = async (req, res) => {
   }
 };
 
+export const createCustomerHandle= async(req, res)=>{
+  try {
+    const user = await Student.findById(req.user.id);
+    if (!user) {
+      return res
+        .status(404)
+        .json(new ApiResponse(404, {}, Msg.USER_NOT_FOUND));
+    }
+    if (user.stripeCustomerId) {
+      return res.status(200).json(
+        new ApiResponse(
+          200,
+          {
+            customer: {
+              id: user.stripeCustomerId,
+            },
+          },
+          Msg.CUSTOMER_FETCH_SUCCESS,
+        ),
+      );
+    }
+      
+    
+    const customer = await stripe.customers.create({
+      email: user.email,
+      name: user.name,
+    });
+    
+    user.stripeCustomerId = customer.id;
+    await user.save();
+    
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          customer,
+        },
+        Msg.CUSTOMER_CREATED,
+      ),
+    );
+  } catch (error) {
+    console.error("Create customer error:", error);
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+}
+
 export const confirmPaymentIntent = async (req, res) => {
   try {
     const { paymentIntentId } = req.params;
@@ -75,7 +122,7 @@ export const confirmPaymentIntent = async (req, res) => {
   }
 };
 
-export const paymentWebhookHandle = async (req, res) => {
+export const stripeWebhookHandle = async (req, res) => {
   const sig = req.headers["stripe-signature"];
 
   let event;
@@ -84,74 +131,97 @@ export const paymentWebhookHandle = async (req, res) => {
     event = stripe.webhooks.constructEvent(
       req.body,
       sig,
-      process.env.STRIPE_WEBHOOK_SECRET
+      process.env.STRIPE_WEBHOOK_SECRET,
     );
   } catch (err) {
-    console.log("❌ WEBHOOK SIGNATURE VERIFICATION FAILED");
-    console.log(err.message);
-
+    console.error("Stripe signature verification failed:", err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  console.log("✅ WEBHOOK RECEIVED:", event.type);
-
   try {
-    switch (event.type) {
-      case "payment_intent.succeeded": {
-        const paymentIntent = event.data.object;
+    /* ---------------- PAYMENT SUCCESS ---------------- */
+    if (event.type === "payment_intent.succeeded") {
+      const intent = event.data.object;
 
-        console.log("✅ PAYMENT SUCCESS");
-        console.log("PaymentIntent ID:", paymentIntent.id);
-        console.log("Amount:", paymentIntent.amount);
-        console.log("Currency:", paymentIntent.currency);
+     console.log("Payment successful:", intent);
 
-        // 👉 TODO:
-        // 1. Save payment in DB
-        // 2. Grant course / subscription access
-        break;
-      }
+    //   const { userId, planId } = intent.metadata;
+    // //  const paymentMethodId = intent.payment_method;
 
-      case "payment_intent.payment_failed": {
-        const paymentIntent = event.data.object;
+    //   if (!userId || !planId) {
+    //     console.log("Missing metadata, skipping webhook processing");
+    //     return res.status(200).send("Webhook received");
+    //   }
 
-        console.log("❌ PAYMENT FAILED");
-        console.log("PaymentIntent ID:", paymentIntent.id);
-        console.log("Reason:", paymentIntent.last_payment_error?.message);
+    //   const plan = await SubscriptionPlan.findById(planId);
+    //   if (!plan) {
+    //     console.log("Plan not found:", planId);
+    //     return res.status(200).send("Webhook received");
+    //   }
 
-        // 👉 TODO: mark payment failed
-        break;
-      }
+      // // Create payment record
+      // await Payment.findOneAndUpdate(
+      //   { stripePaymentIntentId: intent.id },
+      //   {
+      //     user: userId,
+      //     plan: planId,
+      //     amount: intent.amount_received / 100,
+      //     currency: intent.currency.toUpperCase(),
+      //     status: "success",
+      //   },
+      //   { upsert: true, new: true },
+      // );
 
-      case "payment_intent.canceled": {
-        const paymentIntent = event.data.object;
+      // // Create user subscription
+      // const startDate = new Date();
+      // const endDate = new Date(startDate);
+      // endDate.setDate(endDate.getDate() + plan.durationDays);
 
-        console.log("⚠️ PAYMENT CANCELED");
-        console.log("PaymentIntent ID:", paymentIntent.id);
+      // console.log("start date -------->", startDate);
+      // console.log("end date --------->", endDate);
 
-        // 👉 TODO: cleanup pending records
-        break;
-      }
+      // await UserSubscriptionPlan.findOneAndUpdate(
+      //   { user: userId },
+      //   {
+      //     plan: planId,
+      //     startDate,
+      //     endDate,
+      //     status: "active",
+      //   },
+      //   { upsert: true, new: true },
+      // );
 
-      case "charge.refunded": {
-        const charge = event.data.object;
+      // await User.findByIdAndUpdate(userId, {
+      //   hasActiveSubscription: true,
+      // });
 
-        console.log("🔁 PAYMENT REFUNDED");
-        console.log("Charge ID:", charge.id);
-        console.log("Amount Refunded:", charge.amount_refunded);
-
-        // 👉 TODO: revoke access / update DB
-        break;
-      }
-
-      default:
-        console.log("⚠️ Unhandled event type:", event.type);
+      console.log("Subscription activated for user:");
     }
 
-    res.json({ received: true });
+    /* ---------------- PAYMENT FAILED ---------------- */
+    if (event.type === "payment_intent.payment_failed") {
+      // console.log("Payment failed:", event.data.object);
+      // const { userId } = intent.metadata;
+      const intent = event.data.object;
+
+      // await Payment.findOneAndUpdate(
+      //   { stripePaymentIntentId: intent.id },
+      //   { status: "failed" },
+      //   { upsert: true },
+      // );
+      // await User.findByIdAndUpdate(userId, {
+      //   // defaultPaymentMethod: paymentMethodId,
+      //   hasActiveSubscription: false,
+      // });
+    }
+
+    return res.status(200).send("Webhook received");
   } catch (error) {
-    console.log("❌ WEBHOOK HANDLER ERROR");
-    console.log(error.message);
-    res.status(500).send("Webhook handler failed");
+    console.error("Stripe webhook DB error:", error);
+    return res.status(500).send(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
+
+
+
 

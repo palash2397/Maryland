@@ -85,6 +85,11 @@ const studentSchema = new mongoose.Schema(
       default: "student",
     },
 
+    stripeCustomerId: {
+      type: String,
+      default: null,
+    },
+
     actToken: {
       type: String,
       default: null,

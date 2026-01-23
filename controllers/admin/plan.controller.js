@@ -1,4 +1,5 @@
 import Joi from "joi";
+import stripe from "../../utils/stripe/stripe.js";
 
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { Msg } from "../../utils/responseMsg.js";
@@ -135,5 +136,66 @@ export const updatePlanHandle = async(req, res)=>{
         return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
     }
 }
+
+export const createSubscriptionCheckout = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const plan = await Plan.findOne({ _id: id, isActive: true });
+    if (!plan) {
+      return res.status(400).json(
+        new ApiResponse(400, {}, Msg.PLAN_NOT_FOUND)
+      );
+    }
+
+    let subscription = await UserSubscription.findOne({
+      userId: req.user.id,
+    });
+
+ 
+
+    // Create Stripe customer if not exists
+    let customerId = subscription?.stripeCustomerId;
+    if (!customerId) {
+      const customer = await stripe.customers.create({
+        email: req.user.email,
+      });
+      customerId = customer.id;
+    }
+
+    // Create Stripe subscription
+    const stripeSubscription = await stripe.subscriptions.create({
+      customer: customerId,
+      items: [{ price: plan.stripePriceId }],
+      payment_behavior: "default_incomplete",
+      expand: ["latest_invoice.payment_intent"],
+    });
+
+    
+    await UserSubscription.updateOne(
+      { userId: req.user.id },
+      {
+        stripeCustomerId: customerId,
+        stripeSubscriptionId: stripeSubscription.id,
+      }
+    );
+
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          clientSecret:
+            stripeSubscription.latest_invoice.payment_intent.client_secret,
+        },
+        "Checkout created"
+      )
+    );
+  } catch (error) {
+    console.error("Subscription checkout error:", error);
+    return res.status(500).json(
+      new ApiResponse(500, {}, Msg.SERVER_ERROR)
+    );
+  }
+};
 
 

@@ -2,10 +2,11 @@ import { Router } from "express";
 import {
   createPaymentIntent,
   confirmPaymentIntent,
-  paymentWebhookHandle,
+  
+
 } from "../controllers/student/payment.controller.js";
 import { auth } from "../middlewares/auth.js";
-import bodyParser from "body-parser";
+
 
 const paymentRouter = Router();
 
@@ -15,10 +16,6 @@ paymentRouter.post(
   auth,
   confirmPaymentIntent
 );
-paymentRouter.post(
-  "/webhook",
-  bodyParser.raw({ type: "application/json" }),
-  paymentWebhookHandle
-);
+
 
 export default paymentRouter;

@@ -16,6 +16,8 @@ import {
   updateTeacherReviewHandle,
   mySubscriptionHandle
 } from "../controllers/student/student.controller.js";
+
+import { createSubscriptionCheckout } from "../controllers/admin/plan.controller.js";
 import { auth } from "../middlewares/auth.js";
 import { setUploadPath } from "../utils/helper.js";
 import {uploadProfileImage} from "../middlewares/s3upload.js";
@@ -41,5 +43,6 @@ studentRouter.get("/teacher-review/:id", auth, myTeacherReviewsHandle);
 studentRouter.put("/teacher-review/:id", auth, updateTeacherReviewHandle);
 
 studentRouter.get("/subscription", auth, mySubscriptionHandle);
+studentRouter.post("/subscription/checkout/:id", auth, createSubscriptionCheckout);
 
 export default studentRouter;

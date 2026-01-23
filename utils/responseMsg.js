@@ -94,6 +94,7 @@ export const Msg = {
   PLAN_DELETE: `Plan deleted successfully`,
   PLAN_UPDATE: `Plan updated successfully`,
   PLAN_LIST: `Plan list fetched successfully`,
+  INVALID_OR_UNPAID_PLAN: `Invalid or unpaid plan`,
   PLAN_DETAIL: `Plan detail fetched successfully`,
 
 };
