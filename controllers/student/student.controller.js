@@ -186,7 +186,7 @@ export const loginHandle = async (req, res) => {
         .status(400)
         .json(new ApiResponse(400, {}, Msg.INVALID_CREDENTIALS));
     const token = Jwt.sign(
-      { id: user._id, email: user.email },
+      { id: user._id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: "30d" }
     );
@@ -195,7 +195,7 @@ export const loginHandle = async (req, res) => {
       userId: user._id,
 
       email: user.email,
-
+      role: user.role,
       isVerified: user.isVerified,
       isActive: user.isActive,
       token: token,

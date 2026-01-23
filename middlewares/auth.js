@@ -16,6 +16,7 @@ export const auth = (req, res, next) => {
 };
 
 export const isAdmin = (req, res, next) => {
+  console.log("isAdmin --->", req.user.role);
   if (req.user.role !== 'admin') {
     return res.status(401).json(new ApiResponse(401, {}, "Access is forbidden"));
   }
