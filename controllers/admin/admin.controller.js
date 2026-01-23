@@ -57,3 +57,17 @@ export const createPlanHandle = async (req, res) => {
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
+
+export const getPlansHandle = async (req, res) => {
+  try {
+    const plans = await Plan.find();
+    if (!plans) {
+      return res.status(404).json(new ApiResponse(404, {}, Msg.PLAN_NOT_FOUND));
+    }
+    return res.status(200).json(new ApiResponse(200, plans, Msg.PLAN_LIST));
+  } catch (error) {
+    console.error("Error getting plans:", error);
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+};
+

@@ -87,4 +87,13 @@ export const Msg = {
   SUBSCRIPTION_INACTIVE: `Subscription is inactive`,
   SUBSCRIPTION_PLAN_NOT_FOUND: `Subscription plan not found`,
 
+
+  // Plan
+  PLAN_CREATED: `Plan created successfully`,
+  PLAN_NOT_FOUND: `Plan not found`,
+  PLAN_DELETE: `Plan deleted successfully`,
+  PLAN_UPDATE: `Plan updated successfully`,
+  PLAN_LIST: `Plan list fetched successfully`,
+  PLAN_DETAIL: `Plan detail fetched successfully`,
+
 };
