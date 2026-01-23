@@ -1,6 +1,6 @@
 import Router from "express";
 import { auth } from "../middlewares/auth.js";
-import { uploadLessonFiles, uploadQuestThumbnail } from "../middlewares/s3upload.js";
+import { uploadLessonFiles, uploadQuestThumbnail, uploadChapter } from "../middlewares/s3upload.js";
 
 import {
   createLessonHandle,
@@ -16,7 +16,8 @@ import {
   deleteQuizHandler,
   updateQuestHandler,
   questByIdHandle,
-  searchLessonsHandler
+  searchLessonsHandler,
+ 
 } from "../controllers/teacher/lesson.controller.js";
 
 const lessonRouter = Router();
@@ -39,6 +40,10 @@ lessonRouter.delete("/quest/:id", auth, deleteQuestHandle);
 lessonRouter.get("/quest/:id", auth, questByIdHandle);
 lessonRouter.get("/quest", auth, getQuestsHandle);
 lessonRouter.put("/update-quest", auth, uploadQuestThumbnail, updateQuestHandler);
+
+
+
+// lessonRouter.post("/chapter", auth, uploadChapter, createChapterHandle);
 
 // lessonRouter.post("/test-upload", uploadLessonFiles, (req, res) => {
 //   try {

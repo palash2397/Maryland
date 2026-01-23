@@ -58,4 +58,22 @@ export const Msg = {
   EMAIL_ALREADY_VERIFIED: `Email already verified`,
   PHONE_VERIFIED: `Phone number verified successfully`,
   PHONE_ALREADY_VERIFIED: `Phone number already verified`,
+
+
+  // Lesson
+  LESSON_CREATED: `Lesson created successfully`,
+  LESSON_NOT_FOUND: `Lesson not found`,
+  LESSON_DELETE: `Lesson deleted successfully`,
+  LESSON_UPDATE: `Lesson updated successfully`,
+  LESSON_LIST: `Lesson list fetched successfully`,
+  LESSON_DETAIL: `Lesson detail fetched successfully`,
+
+  // chapter 
+  CHAPTER_CREATED: `Chapter created successfully`,
+  CHAPTER_NOT_FOUND: `Chapter not found`,
+  CHAPTER_DELETE: `Chapter deleted successfully`,
+  CHAPTER_UPDATE: `Chapter updated successfully`,
+  CHAPTER_LIST: `Chapter list fetched successfully`,
+  CHAPTER_DETAIL: `Chapter detail fetched successfully`,
+
 };

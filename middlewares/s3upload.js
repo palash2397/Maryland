@@ -38,3 +38,9 @@ export const uploadQuestThumbnail = s3Uploader({
   thumbnail: "quests/thumbnails",
 }).single("thumbnail");
 
+
+export const uploadChapter = s3Uploader({
+  video: "lesson/chapters",
+}).single("video");
+
+

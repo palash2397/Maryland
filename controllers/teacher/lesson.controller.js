@@ -8,12 +8,13 @@ import { deleteFromS3 } from "../../utils/s3delete.js";
 
 import Teacher from "../../models/teacher/teacher.js";
 import Lesson from "../../models/lesson/lesson.js";
+import Video from "../../models/lesson/video.js";
 import Quiz from "../../models/quizz/quizz.js";
 import Quest from "../../models/quest/quest.js";
 
 export const createLessonHandle = async (req, res) => {
   try {
-    const { title, topic, difficultyLevel, description, videoLink } = req.body;
+    const { title, topic, difficultyLevel, description } = req.body;
 
     // Validation
     const schema = Joi.object({
@@ -31,8 +32,6 @@ export const createLessonHandle = async (req, res) => {
         .json(new ApiResponse(400, {}, error.details[0].message));
     }
 
-    // Extract uploaded files
-    const videoFile = req.files?.video?.[0] || null;
     const thumbnailFile = req.files?.thumbnail?.[0] || null;
 
     const lesson = await Lesson.create({
@@ -41,10 +40,6 @@ export const createLessonHandle = async (req, res) => {
       topic,
       difficultyLevel,
       description,
-      videoLink: videoLink || null,
-
-      // Store S3 KEYS (not URLs)
-      video: videoFile ? videoFile.key : null,
       thumbnail: thumbnailFile ? thumbnailFile.key : null,
     });
 
@@ -54,6 +49,8 @@ export const createLessonHandle = async (req, res) => {
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
+
+
 
 export const allLessonHandle = async (req, res) => {
   try {
@@ -96,7 +93,7 @@ export const allLessonHandle = async (req, res) => {
           ? await getSignedFileUrl(lesson.thumbnail, 3600)
           : null,
         video: lesson.video ? await getSignedFileUrl(lesson.video, 3600) : null,
-      }))
+      })),
     );
     return res
       .status(200)
@@ -146,12 +143,11 @@ export const deleteLessonHandle = async (req, res) => {
 
 export const searchLessonsHandler = async (req, res) => {
   try {
-     const teacherId = req.user.id;
+    const teacherId = req.user.id;
     const { search, status, page = 1, limit = 10 } = req.query;
 
     const filter = { teacherId };
 
-    
     if (search) {
       filter.$or = [
         { title: { $regex: search, $options: "i" } },
@@ -173,11 +169,12 @@ export const searchLessonsHandler = async (req, res) => {
 
     const total = await Lesson.countDocuments(filter);
 
-
-    lessons.map(async (Les)=>{
+    lessons.map(async (Les) => {
       Les.video = Les.video ? await getSignedFileUrl(Les.video) : null;
-      Les.thumbnail = Les.thumbnail ? await getSignedFileUrl(Les.thumbnail) : null;
-    })
+      Les.thumbnail = Les.thumbnail
+        ? await getSignedFileUrl(Les.thumbnail)
+        : null;
+    });
 
     return res.status(200).json(
       new ApiResponse(
@@ -191,18 +188,14 @@ export const searchLessonsHandler = async (req, res) => {
             totalPages: Math.ceil(total / limit),
           },
         },
-        Msg.DATA_FETCHED
-      )
+        Msg.DATA_FETCHED,
+      ),
     );
-
   } catch (error) {
     console.error("Error searching lessons:", error);
-    return res
-      .status(500)
-      .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
-
 
 export const quizzHandle = async (req, res) => {
   try {
@@ -225,7 +218,7 @@ export const quizzHandle = async (req, res) => {
             difficulty: Joi.string()
               .valid("easy", "medium", "hard")
               .default("easy"),
-          })
+          }),
         )
         .min(1)
         .required(),
@@ -452,10 +445,12 @@ export const getQuestsHandle = async (req, res) => {
           quest.thumbnail.key = await getSignedFileUrl(quest.thumbnail.key);
         }
         return quest;
-      })
+      }),
     );
-    
-    return res.status(200).json(new ApiResponse(200, questsWithSignedUrls, Msg.DATA_FETCHED));
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, questsWithSignedUrls, Msg.DATA_FETCHED));
   } catch (error) {
     console.error("Error getting quests:", error);
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
@@ -565,6 +560,3 @@ export const updateQuestHandler = async (req, res) => {
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
-
-
-

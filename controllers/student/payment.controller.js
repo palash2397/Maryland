@@ -75,9 +75,6 @@ export const confirmPaymentIntent = async (req, res) => {
   }
 };
 
-
-
-
 export const paymentWebhookHandle = async (req, res) => {
   const sig = req.headers["stripe-signature"];
 

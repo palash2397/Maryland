@@ -4,48 +4,39 @@ const lessonSchema = new mongoose.Schema(
     teacherId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Teacher",
-      required: true
+      required: true,
     },
     title: {
       type: String,
-      required: true
+      required: true,
     },
     topic: {
       type: String,
-      required: true
+      required: true,
     },
     difficultyLevel: {
       type: String,
-      required: true
+      required: true,
     },
     description: {
       type: String,
-      required: true
+      required: true,
     },
     thumbnail: {
       type: String,
       required: false,
-      default: null
+      default: null,
     },
-    video: {
-      type: String,
-      required: false,
-      default: null
-    },
-    videoLink: {
-      type: String,
-      required: false,
-      default: null
-    },
+
     status: {
       type: String,
       enum: ["draft", "published"],
-      default: "published"
-    }
+      default: "published",
+    },
   },
   {
-    timestamps: true
-  }
+    timestamps: true,
+  },
 );
- const Lesson = mongoose.model("Lesson", lessonSchema);
- export default Lesson;
+const Lesson = mongoose.model("Lesson", lessonSchema);
+export default Lesson;
