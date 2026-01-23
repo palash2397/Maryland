@@ -61,7 +61,7 @@ export const createPlanHandle = async (req, res) => {
 export const getPlansHandle = async (req, res) => {
   try {
     const plans = await Plan.find();
-    if (!plans) {
+    if (!plans || plans.length === 0) {
       return res.status(404).json(new ApiResponse(404, {}, Msg.PLAN_NOT_FOUND));
     }
     return res.status(200).json(new ApiResponse(200, plans, Msg.PLAN_LIST));
@@ -70,4 +70,19 @@ export const getPlansHandle = async (req, res) => {
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
+
+export const getPlanHandle = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const plan = await Plan.findById(id);
+    if (!plan) {
+      return res.status(404).json(new ApiResponse(404, {}, Msg.PLAN_NOT_FOUND));
+    }
+    return res.status(200).json(new ApiResponse(200, plan, Msg.PLAN_DETAIL));
+  } catch (error) {
+    console.error("Error getting plan:", error);
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+};
+
 
