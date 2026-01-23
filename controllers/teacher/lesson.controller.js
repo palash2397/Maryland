@@ -207,6 +207,7 @@ export const deleteLessonHandle = async (req, res) => {
     const data = await Lesson.findByIdAndDelete(id);
     await Quiz.deleteMany({ lessonId: id });
     await Quest.deleteMany({ lessonId: id });
+    await Video.deleteMany({ lessonId: id });
     return res.status(200).json(new ApiResponse(200, data, Msg.DATA_DELETED));
   } catch (error) {
     console.error("Error deleting lesson:", error);
