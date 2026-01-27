@@ -6,7 +6,7 @@ import { Msg } from "../../utils/responseMsg.js";
 import { getSignedFileUrl } from "../../utils/s3SignedUrl.js";
 import { deleteFromS3 } from "../../utils/s3delete.js";
 
-import Teacher from "../../models/teacher/teacher.js";
+// import Teacher from "../../models/teacher/teacher.js";
 import Lesson from "../../models/lesson/lesson.js";
 import Video from "../../models/lesson/video.js";
 import Quiz from "../../models/quizz/quizz.js";
