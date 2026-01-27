@@ -80,6 +80,7 @@ export const Msg = {
   SUBSCRIPTION_FETCHED: `Subscription fetched successfully`,
   SUBSCRIPTION_CREATED: `Subscription created successfully`,
   SUBSCRIPTION_NOT_FOUND: `Subscription not found`,
+  SUBSCRIPTION_EXPIRED: `Subscription expired`,
   SUBSCRIPTION_ERROR: `Error fetching subscription`,
   SUBSCRIPTION_CANCELLED: `Subscription cancelled successfully`,
   SUBSCRIPTION_CANCEL_ERROR: `Error cancelling subscription`,
