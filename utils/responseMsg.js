@@ -86,6 +86,9 @@ export const Msg = {
   SUBSCRIPTION_ACTIVE: `Subscription is already active`,
   SUBSCRIPTION_INACTIVE: `Subscription is inactive`,
   SUBSCRIPTION_PLAN_NOT_FOUND: `Subscription plan not found`,
+  SUBSCRIPTION_CUSTOMER_NOT_FOUND: `Subscription customer not found`,
+  SUBSCRIPTION_CUSTOMER_ALREADY_EXISTS: `Subscription customer already exists`,
+  SUBSCRIPTION_ACTIVE_REQUIRED: `active subscrition is required`,
 
 
   // Plan
