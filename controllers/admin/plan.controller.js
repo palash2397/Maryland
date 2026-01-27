@@ -18,7 +18,7 @@ const createStripePriceForPlan = async (plan) => {
     unit_amount: plan.price * 100, // INR → paise
     currency: plan.currency.toLowerCase(),
     recurring: {
-      interval: plan.interval, // month / year
+      interval: plan.interval, 
     },
     product: product.id,
   });
@@ -188,6 +188,7 @@ export const createSubscriptionCheckout = async (req, res) => {
 
     
     let customerId = subscription?.stripeCustomerId;
+    console.log("customerId", customerId);
     if (!customerId) {
       const customer = await stripe.customers.create({
         email: req.user.email,
