@@ -6,11 +6,30 @@ import { Msg } from "../../utils/responseMsg.js";
 import UserSubscription from "../../models/subcription/userSubscription.js";
 import Plan from "../../models/plan/plan.js";
 
+const createStripePriceForPlan = async (plan) => {
+  // 1. Create product
+  const product = await stripe.products.create({
+    name: plan.name,
+    description: plan.title,
+  });
 
+  // 2. Create price
+  const price = await stripe.prices.create({
+    unit_amount: plan.price * 100, // INR → paise
+    currency: plan.currency.toLowerCase(),
+    recurring: {
+      interval: plan.interval, // month / year
+    },
+    product: product.id,
+  });
+
+  return price.id;
+};
 
 export const createPlanHandle = async (req, res) => {
   try {
-    const { name, title, price, duration, features, interval, description } = req.body;
+    const { name, title, price, duration, features, interval, description } =
+      req.body;
     const planSchema = Joi.object({
       name: Joi.string().required(),
       title: Joi.string().required(),
@@ -46,6 +65,12 @@ export const createPlanHandle = async (req, res) => {
       description,
     });
 
+    if (plan.price > 0) {
+      const stripePriceId = await createStripePriceForPlan(plan);
+      plan.stripePriceId = stripePriceId;
+      await plan.save();
+    }
+
     return res.status(201).json(new ApiResponse(201, plan, Msg.DATA_ADDED));
   } catch (error) {
     console.error("Error creating plan:", error);
@@ -80,81 +105,88 @@ export const getPlanHandle = async (req, res) => {
   }
 };
 
-
-export const deletePlanHandle = async(req, res)=>{
-    try {
-        const {id} = req.params;
-        const Schema = Joi.object({
-            id: Joi.string().required(),
-        });
-        const { error } = Schema.validate({ id });
-        if (error) {
-            return res.status(400).json(new ApiResponse(400, {}, error.details[0].message));
-        }
-        const plan = await Plan.findByIdAndDelete(id);
-        if (!plan) {
-            return res.status(404).json(new ApiResponse(404, {}, Msg.PLAN_NOT_FOUND));
-        }
-        return res.status(200).json(new ApiResponse(200, {}, Msg.PLAN_DELETE));
-    } catch (error) {
-        console.error("Error deleting plan:", error);
-        return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+export const deletePlanHandle = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const Schema = Joi.object({
+      id: Joi.string().required(),
+    });
+    const { error } = Schema.validate({ id });
+    if (error) {
+      return res
+        .status(400)
+        .json(new ApiResponse(400, {}, error.details[0].message));
     }
-}
-
-export const updatePlanHandle = async(req, res)=>{
-    try {
-        const {id} = req.params;
-        const {name, price, interval, features, description} = req.body;
-        const Schema = Joi.object({
-            name: Joi.string().optional(),
-            price: Joi.number().optional(),
-            interval: Joi.string().optional(),
-            features: Joi.array().optional(),
-            description: Joi.string().optional(),
-        });
-        const { error } = Schema.validate({ name, price, interval, features, description });
-        if (error) {
-            return res.status(400).json(new ApiResponse(400, {}, error.details[0].message));
-        }
-
-        const plan = await Plan.findById(id);
-        if (!plan) {
-            return res.status(404).json(new ApiResponse(404, {}, Msg.PLAN_NOT_FOUND));
-        }
-
-        plan.name = name || plan.name;
-        plan.price = price || plan.price;
-        plan.interval = interval || plan.interval;
-        plan.features = features || plan.features;
-        plan.description = description || plan.description;
-    
-        await plan.save();
-        return res.status(200).json(new ApiResponse(200, plan, Msg.PLAN_UPDATE));
-    } catch (error) {
-        console.error("Error updating plan:", error);
-        return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+    const plan = await Plan.findByIdAndDelete(id);
+    if (!plan) {
+      return res.status(404).json(new ApiResponse(404, {}, Msg.PLAN_NOT_FOUND));
     }
-}
+    return res.status(200).json(new ApiResponse(200, {}, Msg.PLAN_DELETE));
+  } catch (error) {
+    console.error("Error deleting plan:", error);
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+};
+
+export const updatePlanHandle = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, price, interval, features, description } = req.body;
+    const Schema = Joi.object({
+      name: Joi.string().optional(),
+      price: Joi.number().optional(),
+      interval: Joi.string().optional(),
+      features: Joi.array().optional(),
+      description: Joi.string().optional(),
+    });
+    const { error } = Schema.validate({
+      name,
+      price,
+      interval,
+      features,
+      description,
+    });
+    if (error) {
+      return res
+        .status(400)
+        .json(new ApiResponse(400, {}, error.details[0].message));
+    }
+
+    const plan = await Plan.findById(id);
+    if (!plan) {
+      return res.status(404).json(new ApiResponse(404, {}, Msg.PLAN_NOT_FOUND));
+    }
+
+    plan.name = name || plan.name;
+    plan.price = price || plan.price;
+    plan.interval = interval || plan.interval;
+    plan.features = features || plan.features;
+    plan.description = description || plan.description;
+
+    await plan.save();
+    return res.status(200).json(new ApiResponse(200, plan, Msg.PLAN_UPDATE));
+  } catch (error) {
+    console.error("Error updating plan:", error);
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+};
 
 export const createSubscriptionCheckout = async (req, res) => {
   try {
     const { id } = req.params;
 
     const plan = await Plan.findOne({ _id: id, isActive: true });
-    if (!plan) {
-      return res.status(400).json(
-        new ApiResponse(400, {}, Msg.PLAN_NOT_FOUND)
-      );
+    if (!plan || !plan.stripePriceId) {
+      return res
+        .status(400)
+        .json(new ApiResponse(400, {}, Msg.PLAN_NOT_FOUND));
     }
 
     let subscription = await UserSubscription.findOne({
       userId: req.user.id,
     });
 
- 
-
-    // Create Stripe customer if not exists
+    
     let customerId = subscription?.stripeCustomerId;
     if (!customerId) {
       const customer = await stripe.customers.create({
@@ -163,7 +195,7 @@ export const createSubscriptionCheckout = async (req, res) => {
       customerId = customer.id;
     }
 
-    // Create Stripe subscription
+   
     const stripeSubscription = await stripe.subscriptions.create({
       customer: customerId,
       items: [{ price: plan.stripePriceId }],
@@ -171,7 +203,9 @@ export const createSubscriptionCheckout = async (req, res) => {
       expand: ["latest_invoice.payment_intent"],
     });
 
-    
+    const paymentIntent =
+      stripeSubscription.latest_invoice.payment_intent;
+
     await UserSubscription.updateOne(
       { userId: req.user.id },
       {
@@ -184,18 +218,17 @@ export const createSubscriptionCheckout = async (req, res) => {
       new ApiResponse(
         200,
         {
-          clientSecret:
-            stripeSubscription.latest_invoice.payment_intent.client_secret,
+          clientSecret: paymentIntent.client_secret,
+          paymentId: paymentIntent.id, // ✅ added
+          subscriptionId: stripeSubscription.id, // optional but useful
         },
         "Checkout created"
       )
     );
   } catch (error) {
     console.error("Subscription checkout error:", error);
-    return res.status(500).json(
-      new ApiResponse(500, {}, Msg.SERVER_ERROR)
-    );
+    return res
+      .status(500)
+      .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
-
-

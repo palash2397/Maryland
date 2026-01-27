@@ -108,6 +108,51 @@ export const createChapterHandle = async (req, res) => {
   }
 };
 
+export const allChaptersByLessonId = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const teacherId = req.user.id;
+
+    const chapters = await Video.find({ lessonId: id, teacherId }).lean();
+
+    if (!chapters || chapters.length === 0) {
+      return res
+        .status(404)
+        .json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND));
+    }
+
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, chapters, Msg.CHAPTERS_FETCHED));
+  } catch (error) {
+    console.error("Error fetching chapters:", error);
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+};
+
+
+export const deleteChapterHandle = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const teacherId = req.user.id;
+
+    const chapter = await Video.findOneAndDelete({ _id: id, teacherId });
+    if (!chapter) {
+      return res
+        .status(404)
+        .json(new ApiResponse(404, {}, Msg.CHAPTER_NOT_FOUND));
+    }
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, {}, Msg.CHAPTER_DELETE));
+  } catch (error) {
+    console.error("Error deleting chapter:", error);
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+};
+
 export const allLessonHandle = async (req, res) => {
   try {
     const { id } = req.body;
