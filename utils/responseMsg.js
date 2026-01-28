@@ -76,6 +76,7 @@ export const Msg = {
   CHAPTER_UPDATE: `Chapter updated successfully`,
   CHAPTER_LIST: `Chapter list fetched successfully`,
   CHAPTER_DETAIL: `Chapter detail fetched successfully`,
+  CHAPTER_FETCHED: `Chapters fetched successfully`,
 
   // Subscription
   SUBSCRIPTION_FETCHED: `Subscription fetched successfully`,

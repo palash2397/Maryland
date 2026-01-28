@@ -462,6 +462,67 @@ export const allLessonsHandle = async (req, res) => {
 };
 
 
+export const lessonChaptersHandle = async (req, res) => {
+  try {
+    const { lessonId } = req.params;
+
+    const chapters = await Video.find({
+      lessonId,
+      status: "published",
+    })
+      .select("title duration accessType order")
+      .sort({ order: 1 })
+      .lean();
+
+    // 2. Fetch user's subscription once
+    const subscription = await UserSubscription.findOne({
+      userId: req.user.id,
+      status: "active",
+    }).lean();
+
+    const hasActiveSubscription =
+      subscription && (!subscription.endDate || subscription.endDate >= new Date());
+
+    
+    const formattedChapters = chapters.map((chapter) => {
+      if (chapter.accessType === "free") {
+        return {
+          ...chapter,
+          isLocked: false,
+          requiresSubscription: false,
+        };
+      }
+
+      if (!hasActiveSubscription) {
+        return {
+          ...chapter,
+          isLocked: true,
+          requiresSubscription: true,
+        };
+      }
+
+      return {
+        ...chapter,
+        isLocked: false,
+        requiresSubscription: false,
+      };
+    });
+
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        formattedChapters,
+        Msg.LESSON_FETCHED
+      )
+    );
+  } catch (error) {
+    console.error("Get lesson chapters error:", error);
+    return res
+      .status(500)
+      .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+};
+
 export const lessonByIdHandle = async (req, res) => {
   try {
     const { id } = req.params;
