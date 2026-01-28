@@ -725,6 +725,7 @@ export const mySubscriptionHandle = async (req, res) => {
       userId: req.user.id,
     }).lean();
 
+    // ✅ No subscription → Free plan
     if (!subscription) {
       return res.status(200).json(
         new ApiResponse(
@@ -733,26 +734,39 @@ export const mySubscriptionHandle = async (req, res) => {
             plan: "free",
             status: "active",
             validTill: null,
+            cancelAtPeriodEnd: false,
+            canAccessPaidContent: false,
           },
-          Msg.SUBSCRIPTION_NOT_FOUND,
-        ),
+          Msg.SUBSCRIPTION_NOT_FOUND
+        )
       );
     }
+
+    // ✅ Check expiry
+    const isExpired =
+      subscription.endDate && subscription.endDate < new Date();
+
+    const isActive =
+      subscription.status === "active" && !isExpired;
 
     return res.status(200).json(
       new ApiResponse(
         200,
         {
           plan: subscription.plan,
-          status: subscription.status,
+          status: isExpired ? "expired" : subscription.status,
           validTill: subscription.endDate,
           cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+          canAccessPaidContent: isActive,
         },
-        Msg.SUBSCRIPTION_FETCHED,
-      ),
+        Msg.SUBSCRIPTION_FETCHED
+      )
     );
   } catch (error) {
     console.error("Error fetching subscription:", error);
-    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+    return res
+      .status(500)
+      .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
+
