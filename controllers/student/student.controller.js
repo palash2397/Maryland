@@ -465,6 +465,14 @@ export const allLessonsHandle = async (req, res) => {
 export const lessonChaptersHandle = async (req, res) => {
   try {
     const { lessonId } = req.params;
+    const schema = Joi.object({
+      lessonId: Joi.string().required()
+    })
+
+    const { error } = schema.validate(req.params);
+    if (error) {
+      return res.status(400).json(new ApiResponse(400, {}, error.details[0].message));
+    }
 
     const chapters = await Video.find({
       lessonId,
@@ -473,6 +481,10 @@ export const lessonChaptersHandle = async (req, res) => {
       .select("title duration accessType order")
       .sort({ order: 1 })
       .lean();
+
+    if (!chapters || chapters.length === 0) {
+      return res.status(404).json(new ApiResponse(404, {}, Msg.CHAPTER_NOT_FOUND));
+    }
 
     // 2. Fetch user's subscription once
     const subscription = await UserSubscription.findOne({

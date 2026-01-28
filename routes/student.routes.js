@@ -14,7 +14,8 @@ import {
   addTeacherReviewHandle,
   myTeacherReviewsHandle,
   updateTeacherReviewHandle,
-  mySubscriptionHandle
+  mySubscriptionHandle,
+  lessonChaptersHandle
 } from "../controllers/student/student.controller.js";
 
 import { createSubscriptionCheckout } from "../controllers/admin/plan.controller.js";
@@ -37,6 +38,8 @@ studentRouter.put("/change-password", auth, changePasswordHandle);
 
 studentRouter.get("/lessons", auth, allLessonsHandle);
 studentRouter.get("/lesson/:id", auth, lessonByIdHandle);
+
+studentRouter.get("/lesson/chapters/:lessonId", auth, lessonChaptersHandle);
 
 studentRouter.post("/teacher-review", auth, addTeacherReviewHandle);
 studentRouter.get("/teacher-review/:id", auth, myTeacherReviewsHandle);
