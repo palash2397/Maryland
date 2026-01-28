@@ -98,7 +98,7 @@ export const registerHandle = async (req, res) => {
       plan: "free",
       status: "active",
       startDate: new Date(),
-      endDate:null
+      endDate: null,
     });
 
     return res
@@ -164,7 +164,7 @@ export const loginHandle = async (req, res) => {
         .json(new ApiResponse(400, {}, error.details[0].message));
 
     const user = await Student.findOne({ email: email.toLowerCase() }).select(
-      "+password"
+      "+password",
     );
     if (!user)
       return res.status(400).json(new ApiResponse(400, {}, Msg.USER_NOT_FOUND));
@@ -188,7 +188,7 @@ export const loginHandle = async (req, res) => {
     const token = Jwt.sign(
       { id: user._id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: "30d" }
+      { expiresIn: "30d" },
     );
 
     const userData = {
@@ -241,7 +241,7 @@ export const forgotPasswordHandle = async (req, res) => {
       student.firstName,
       student.email,
       student.passwordResetToken,
-      "student"
+      "student",
     );
 
     return res
@@ -373,7 +373,7 @@ export const updateProfileHandle = async (req, res) => {
 export const profileHandle = async (req, res) => {
   try {
     const user = await Student.findById(req.user.id).select(
-      "-password -googleId -provider -createdAt -updatedAt -__v -actToken -linkExpireAt -passwordResetToken"
+      "-password -googleId -provider -createdAt -updatedAt -__v -actToken -linkExpireAt -passwordResetToken",
     );
 
     console.log(`user --------->`, user);
@@ -438,31 +438,29 @@ export const changePasswordHandle = async (req, res) => {
 
 export const allLessonsHandle = async (req, res) => {
   try {
-    const lessons = await Lesson.find({ status: "published" }).lean();
-    if (!lessons || lessons.length === 0) {
-      return res.status(404).json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND));
-    }
+    const lessons = await Lesson.find({ status: "published" })
+      .populate("teacherId", "firstName lastName")
+      .sort({ createdAt: -1 })
+      .lean();
 
-    const lessonsWithSignedUrls = await Promise.all(
-      lessons.map(async (lesson) => {
-        lesson.video = lesson.video
-          ? await getSignedFileUrl(lesson.video)
-          : null;
-        lesson.thumbnail = lesson.thumbnail
+    const lessonsWithThumbs = await Promise.all(
+      lessons.map(async (lesson) => ({
+        ...lesson,
+        thumbnail: lesson.thumbnail
           ? await getSignedFileUrl(lesson.thumbnail)
-          : null;
-        return lesson;
-      })
+          : null,
+      }))
     );
 
     return res
       .status(200)
-      .json(new ApiResponse(200, lessonsWithSignedUrls, Msg.DATA_FETCHED));
+      .json(new ApiResponse(200, lessonsWithThumbs, Msg.LESSON_FETCHED));
   } catch (error) {
     console.error("Error fetching lessons:", error);
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
+
 
 export const lessonByIdHandle = async (req, res) => {
   try {
@@ -541,7 +539,7 @@ export const myTeacherReviewsHandle = async (req, res) => {
           ? await getSignedFileUrl(review.studentId.avatar)
           : `${process.env.DEFAULT_PROFILE_PIC}`;
         return review;
-      })
+      }),
     );
     return res
       .status(200)
@@ -586,14 +584,12 @@ export const updateTeacherReviewHandle = async (req, res) => {
   }
 };
 
-
 export const mySubscriptionHandle = async (req, res) => {
   try {
     const subscription = await UserSubscription.findOne({
       userId: req.user.id,
     }).lean();
 
-   
     if (!subscription) {
       return res.status(200).json(
         new ApiResponse(
@@ -603,8 +599,8 @@ export const mySubscriptionHandle = async (req, res) => {
             status: "active",
             validTill: null,
           },
-          Msg.SUBSCRIPTION_NOT_FOUND
-        )
+          Msg.SUBSCRIPTION_NOT_FOUND,
+        ),
       );
     }
 
@@ -617,15 +613,11 @@ export const mySubscriptionHandle = async (req, res) => {
           validTill: subscription.endDate,
           cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
         },
-        Msg.SUBSCRIPTION_FETCHED
-      )
+        Msg.SUBSCRIPTION_FETCHED,
+      ),
     );
   } catch (error) {
     console.error("Error fetching subscription:", error);
-    return res.status(500).json(
-      new ApiResponse(500, {}, Msg.SERVER_ERROR)
-    );
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
-
-

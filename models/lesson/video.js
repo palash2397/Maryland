@@ -37,7 +37,7 @@ const videoSchema = new mongoose.Schema(
 
     accessType: {
       type: String,
-      enum: ["free","pro", "premium"],
+      enum: ["free", "paid"],
       default: "free",
     },
 
@@ -52,11 +52,6 @@ const videoSchema = new mongoose.Schema(
       default: 0,
     },
 
-    accessType: {
-      type: String,
-      enum: ["free", "premium"],
-      default: "free",
-    },
 
     requiredPlan: {
       type: String,

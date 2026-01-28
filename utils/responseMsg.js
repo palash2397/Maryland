@@ -65,6 +65,7 @@ export const Msg = {
   LESSON_NOT_FOUND: `Lesson not found`,
   LESSON_DELETE: `Lesson deleted successfully`,
   LESSON_UPDATE: `Lesson updated successfully`,
+  LESSON_FETCHED: `Lessons fetched successfully`,
   LESSON_LIST: `Lesson list fetched successfully`,
   LESSON_DETAIL: `Lesson detail fetched successfully`,
 
