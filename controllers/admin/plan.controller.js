@@ -212,7 +212,8 @@ export const createSubscriptionCheckout = async (req, res) => {
       {
         stripeCustomerId: customerId,
         stripeSubscriptionId: stripeSubscription.id,
-      }
+      },
+      { upsert: true }
     );
 
     return res.status(200).json(

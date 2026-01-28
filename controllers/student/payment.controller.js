@@ -141,131 +141,92 @@ export const stripeWebhookHandle = async (req, res) => {
   try {
     switch (event.type) {
       /**
-       * PAYMENT INTENT SUCCESS (first subscription payment)
-       * We must find the invoice/subscription using this PaymentIntent.
+       * ✅ MAIN SOURCE OF TRUTH FOR SUBSCRIPTIONS
        */
-      case "payment_intent.succeeded": {
-        const pi = event.data.object; // PaymentIntent
-        const paymentIntentId = pi.id;
-
-        // Find the invoice that used this PaymentIntent (most reliable for subscriptions)
-        const invoices = await stripe.invoices.list({
-          customer: pi.customer || undefined,
-          payment_intent: paymentIntentId,
-          limit: 1,
-        });
-
-        const invoice = invoices.data?.[0];
-        if (!invoice) {
-          // This can happen if it’s not a subscription invoice (one-time payment) or timing issue
-          console.log(
-            "No invoice found for payment_intent:",
-            paymentIntentId
-          );
-          return res.json({ received: true });
-        }
+      case "invoice.payment_succeeded": {
+        const invoice = event.data.object;
 
         const subscriptionId = invoice.subscription;
-        if (!subscriptionId) {
-          console.log(
-            "Invoice found but no subscription on it. invoice:",
-            invoice.id
-          );
-          return res.json({ received: true });
-        }
+        if (!subscriptionId) break;
 
-        // Prefer subscription periods (more accurate than invoice.period_* in many cases)
+        // Get accurate subscription period + cancel_at_period_end + price
         const sub = await stripe.subscriptions.retrieve(subscriptionId);
 
-        // Identify plan/price
-        const subItem = sub.items?.data?.[0];
-        const price = subItem?.price;
-        const planName = price?.nickname || price?.product || "pro"; // nickname may be null
+        const price = sub.items?.data?.[0]?.price;
 
         await UserSubscription.findOneAndUpdate(
           { stripeSubscriptionId: subscriptionId },
           {
             status: "active",
-            plan: planName,
             stripePriceId: price?.id,
+            plan: price?.nickname || "pro",
             startDate: new Date(sub.current_period_start * 1000),
             endDate: new Date(sub.current_period_end * 1000),
             cancelAtPeriodEnd: sub.cancel_at_period_end,
-            lastPaymentIntentId: paymentIntentId,
           },
-          { new: true }
+          { upsert: true, new: true }
         );
 
         break;
       }
 
       /**
-       * PAYMENT INTENT FAILED
+       * ❌ PAYMENT FAILED
        */
-      case "payment_intent.payment_failed": {
-        const pi = event.data.object;
-        const paymentIntentId = pi.id;
+      case "invoice.payment_failed": {
+        const invoice = event.data.object;
+        const subscriptionId = invoice.subscription;
+        if (!subscriptionId) break;
 
-        const invoices = await stripe.invoices.list({
-          customer: pi.customer || undefined,
-          payment_intent: paymentIntentId,
-          limit: 1,
-        });
-
-        const invoice = invoices.data?.[0];
-        const subscriptionId = invoice?.subscription;
-
-        if (subscriptionId) {
-          await UserSubscription.findOneAndUpdate(
-            { stripeSubscriptionId: subscriptionId },
-            { status: "inactive", lastPaymentIntentId: paymentIntentId }
-          );
-        } else {
-          console.log("payment_failed but no subscription invoice found for PI:", paymentIntentId);
-        }
+        await UserSubscription.findOneAndUpdate(
+          { stripeSubscriptionId: subscriptionId },
+          { status: "inactive" },
+          { upsert: true }
+        );
 
         break;
       }
 
       /**
-       * SUBSCRIPTION UPDATED (cancel_at_period_end, plan change, past_due/unpaid, etc.)
+       * ✅ subscription updated (cancel_at_period_end, plan changes)
        */
       case "customer.subscription.updated": {
         const sub = event.data.object;
-
-        const subItem = sub.items?.data?.[0];
-        const price = subItem?.price;
+        const price = sub.items?.data?.[0]?.price;
 
         await UserSubscription.findOneAndUpdate(
           { stripeSubscriptionId: sub.id },
           {
-            status: sub.status, // optional: map to your statuses if needed
+            status: sub.status, // optional: map to your statuses if you want
             stripePriceId: price?.id,
-            plan: price?.nickname || price?.product || "pro",
+            plan: price?.nickname || "pro",
             startDate: new Date(sub.current_period_start * 1000),
             endDate: new Date(sub.current_period_end * 1000),
             cancelAtPeriodEnd: sub.cancel_at_period_end,
-          }
+          },
+          { upsert: true }
         );
 
         break;
       }
 
       /**
-       * SUBSCRIPTION CANCELLED/ENDED
+       * 🛑 subscription ended
        */
       case "customer.subscription.deleted": {
         const sub = event.data.object;
 
         await UserSubscription.findOneAndUpdate(
           { stripeSubscriptionId: sub.id },
-          { status: "cancelled" }
+          { status: "cancelled" },
+          { upsert: true }
         );
 
         break;
       }
 
       default:
+        // keep this for debugging
         console.log(`Unhandled event type ${event.type}`);
     }
 
