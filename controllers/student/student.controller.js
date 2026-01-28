@@ -445,12 +445,16 @@ export const allLessonsHandle = async (req, res) => {
       .lean();
 
     const lessonsWithThumbs = await Promise.all(
-      lessons.map(async (lesson) => ({
-        ...lesson,
-        thumbnail: lesson.thumbnail
-          ? await getSignedFileUrl(lesson.thumbnail)
-          : null,
-      })),
+      lessons.map(async (lesson) => {
+        const count = await Video.countDocuments({ lessonId: lesson._id });
+        return {
+          ...lesson,
+          thumbnail: lesson.thumbnail
+            ? await getSignedFileUrl(lesson.thumbnail)
+            : null,
+          chapterCount: count,
+        };
+      }),
     );
 
     return res
