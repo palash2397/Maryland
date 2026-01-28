@@ -127,6 +127,12 @@ export const stripeWebhookHandle = async (req, res) => {
   const sig = req.headers["stripe-signature"];
   let event;
 
+  const toDateOrNull = (unixSeconds) => {
+    if (typeof unixSeconds !== "number") return null;
+    const d = new Date(unixSeconds * 1000);
+    return Number.isNaN(d.getTime()) ? null : d;
+  };
+
   try {
     event = stripe.webhooks.constructEvent(
       req.body,
@@ -140,19 +146,30 @@ export const stripeWebhookHandle = async (req, res) => {
 
   try {
     switch (event.type) {
-      /**
-       * ✅ MAIN SOURCE OF TRUTH FOR SUBSCRIPTIONS
-       */
       case "invoice.payment_succeeded": {
         const invoice = event.data.object;
-
-        const subscriptionId = invoice.subscription;
+        // console.log("invoice", invoice.parent?.subscription_details.subscription);
+        const subscriptionId = invoice.parent?.subscription_details.subscription;
+        // console.log("subscriptionId", subscriptionId);
         if (!subscriptionId) break;
 
-        // Get accurate subscription period + cancel_at_period_end + price
         const sub = await stripe.subscriptions.retrieve(subscriptionId);
+        // console.log("sub", sub);
 
         const price = sub.items?.data?.[0]?.price;
+        // console.log("items", sub.items.data[0].price.);
+        const startDate = toDateOrNull(sub.current_period_start);
+        const endDate = toDateOrNull(sub.current_period_end);
+
+        // const update = {
+        //   status: "active",
+        //   stripePriceId: price?.id,
+        //   plan: price?.nickname || "pro",
+        //   cancelAtPeriodEnd: !!sub.cancel_at_period_end,
+        // };
+
+        // if (startDate) update.startDate = startDate;
+        // if (endDate) update.endDate = endDate;
 
         await UserSubscription.findOneAndUpdate(
           { stripeSubscriptionId: subscriptionId },
@@ -160,9 +177,9 @@ export const stripeWebhookHandle = async (req, res) => {
             status: "active",
             stripePriceId: price?.id,
             plan: price?.nickname || "pro",
-            startDate: new Date(sub.current_period_start * 1000),
-            endDate: new Date(sub.current_period_end * 1000),
-            cancelAtPeriodEnd: sub.cancel_at_period_end,
+            startDate: startDate,
+            endDate: endDate,
+            cancelAtPeriodEnd: !!sub.cancel_at_period_end,
           },
           { upsert: true, new: true }
         );
@@ -170,12 +187,9 @@ export const stripeWebhookHandle = async (req, res) => {
         break;
       }
 
-      /**
-       * ❌ PAYMENT FAILED
-       */
       case "invoice.payment_failed": {
         const invoice = event.data.object;
-        const subscriptionId = invoice.subscription;
+        const subscriptionId = invoice.parent?.subscription_details.subscription;
         if (!subscriptionId) break;
 
         await UserSubscription.findOneAndUpdate(
@@ -187,38 +201,36 @@ export const stripeWebhookHandle = async (req, res) => {
         break;
       }
 
-      /**
-       * ✅ subscription updated (cancel_at_period_end, plan changes)
-       */
       case "customer.subscription.updated": {
         const sub = event.data.object;
         const price = sub.items?.data?.[0]?.price;
 
+        const startDate = toDateOrNull(sub.current_period_start);
+        const endDate = toDateOrNull(sub.current_period_end);
+
+
         await UserSubscription.findOneAndUpdate(
           { stripeSubscriptionId: sub.id },
           {
-            status: sub.status, // optional: map to your statuses if you want
+            status: sub.status || "active",
             stripePriceId: price?.id,
             plan: price?.nickname || "pro",
-            startDate: new Date(sub.current_period_start * 1000),
-            endDate: new Date(sub.current_period_end * 1000),
-            cancelAtPeriodEnd: sub.cancel_at_period_end,
+            cancelAtPeriodEnd: !!sub.cancel_at_period_end,
+            startDate: startDate,
+            endDate: endDate,
           },
-          { upsert: true }
+          { upsert: true, new: true }
         );
 
         break;
       }
 
-      /**
-       * 🛑 subscription ended
-       */
       case "customer.subscription.deleted": {
         const sub = event.data.object;
 
         await UserSubscription.findOneAndUpdate(
           { stripeSubscriptionId: sub.id },
-          { status: "cancelled" },
+          { status: "cancelled", cancelAtPeriodEnd: false },
           { upsert: true }
         );
 
@@ -226,7 +238,6 @@ export const stripeWebhookHandle = async (req, res) => {
       }
 
       default:
-        // keep this for debugging
         console.log(`Unhandled event type ${event.type}`);
     }
 

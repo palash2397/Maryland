@@ -224,7 +224,7 @@ export const createSubscriptionCheckout = async (req, res) => {
           paymentId: paymentIntent.id, // ✅ added
           subscriptionId: stripeSubscription.id, // optional but useful
         },
-        "Checkout created"
+        Msg.SUBSCRIPTION_CREATED
       )
     );
   } catch (error) {
