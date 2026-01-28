@@ -10,6 +10,7 @@ import {
   deleteOldImages,
 } from "../../utils/helper.js";
 import Teacher from "../../models/teacher/teacher.js";
+import Video from "../../models/lesson/video.js";
 
 import { getSignedFileUrl } from "../../utils/s3SignedUrl.js";
 import {

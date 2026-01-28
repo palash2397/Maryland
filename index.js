@@ -22,7 +22,7 @@ connectDB();
 // ✅ Middlewares
 import { stripeWebhookHandle } from "./controllers/student/payment.controller.js";
 app.use(
-  "/api/v1/payment/webhook",
+  "/api/v1/stripe/webhook",
   express.raw({ type: "application/json" }),
   stripeWebhookHandle,
 );
