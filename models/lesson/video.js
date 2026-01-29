@@ -40,6 +40,10 @@ const videoSchema = new mongoose.Schema(
       enum: ["free", "paid"],
       default: "free",
     },
+    thumbnail: {
+      type: String,
+      default: null,
+    },
 
     status: {
       type: String,
@@ -52,7 +56,6 @@ const videoSchema = new mongoose.Schema(
       default: 0,
     },
 
-
     requiredPlan: {
       type: String,
       default: null,
@@ -60,7 +63,7 @@ const videoSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 const Video = mongoose.model("Video", videoSchema);

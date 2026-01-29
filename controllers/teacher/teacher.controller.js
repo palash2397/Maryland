@@ -483,7 +483,6 @@ export const updateProfileHandle = async(req, res)=>{
 
 }
 
-
 export const dashboardHandle = async (req, res) => {
   try {
     const studentCount = await Student.countDocuments();
