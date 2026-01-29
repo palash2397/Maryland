@@ -72,6 +72,10 @@ export const changeAccountStatusHandle = async(req, res)=>{
     const schema = Joi.object({
       id: Joi.string().required(),
     });
+    const { error } = schema.validate(req.params);
+    if (error) {
+      return res.status(400).json(new ApiResponse(400, {}, error.details[0].message));
+    }
     
     const user = await Student.findById(id);
     if (!user)
