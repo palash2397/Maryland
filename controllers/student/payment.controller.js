@@ -1,8 +1,8 @@
 import stripe from "../../utils/stripe/stripe.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { Msg } from "../../utils/responseMsg.js";
-import Student from "../../models/student/student.js"
-import UserSubscription from "../../models/subcription/userSubscription.js"
+import Student from "../../models/student/student.js";
+import UserSubscription from "../../models/subcription/userSubscription.js";
 import Joi from "joi";
 
 export const createPaymentIntent = async (req, res) => {
@@ -42,8 +42,8 @@ export const createPaymentIntent = async (req, res) => {
           clientSecret: paymentIntent.client_secret,
           paymentIntentId: paymentIntent.id,
         },
-        Msg.DATA_FETCHED
-      )
+        Msg.DATA_FETCHED,
+      ),
     );
   } catch (error) {
     console.error("Stripe payment error:", error);
@@ -51,13 +51,11 @@ export const createPaymentIntent = async (req, res) => {
   }
 };
 
-export const createCustomerHandle= async(req, res)=>{
+export const createCustomerHandle = async (req, res) => {
   try {
     const user = await Student.findById(req.user.id);
     if (!user) {
-      return res
-        .status(404)
-        .json(new ApiResponse(404, {}, Msg.USER_NOT_FOUND));
+      return res.status(404).json(new ApiResponse(404, {}, Msg.USER_NOT_FOUND));
     }
     if (user.stripeCustomerId) {
       return res.status(200).json(
@@ -72,16 +70,15 @@ export const createCustomerHandle= async(req, res)=>{
         ),
       );
     }
-      
-    
+
     const customer = await stripe.customers.create({
       email: user.email,
       name: user.name,
     });
-    
+
     user.stripeCustomerId = customer.id;
     await user.save();
-    
+
     return res.status(200).json(
       new ApiResponse(
         200,
@@ -95,7 +92,7 @@ export const createCustomerHandle= async(req, res)=>{
     console.error("Create customer error:", error);
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
-}
+};
 
 export const confirmPaymentIntent = async (req, res) => {
   try {
@@ -114,8 +111,8 @@ export const confirmPaymentIntent = async (req, res) => {
           amount: paymentIntent.amount,
           currency: paymentIntent.currency,
         },
-        "Payment confirmed successfully"
-      )
+        "Payment confirmed successfully",
+      ),
     );
   } catch (error) {
     console.error("Error confirming payment:", error);
@@ -137,7 +134,7 @@ export const stripeWebhookHandle = async (req, res) => {
     event = stripe.webhooks.constructEvent(
       req.body,
       sig,
-      process.env.STRIPE_WEBHOOK_SECRET
+      process.env.STRIPE_WEBHOOK_SECRET,
     );
   } catch (err) {
     console.error("Webhook signature verification failed:", err.message);
@@ -149,7 +146,8 @@ export const stripeWebhookHandle = async (req, res) => {
       case "invoice.payment_succeeded": {
         const invoice = event.data.object;
         // console.log("invoice", invoice.parent?.subscription_details.subscription);
-        const subscriptionId = invoice.parent?.subscription_details.subscription;
+        const subscriptionId =
+          invoice.parent?.subscription_details.subscription;
         // console.log("subscriptionId", subscriptionId);
         if (!subscriptionId) break;
 
@@ -181,7 +179,7 @@ export const stripeWebhookHandle = async (req, res) => {
             endDate: endDate,
             cancelAtPeriodEnd: !!sub.cancel_at_period_end,
           },
-          { upsert: true, new: true }
+          { upsert: true, new: true },
         );
 
         break;
@@ -189,13 +187,14 @@ export const stripeWebhookHandle = async (req, res) => {
 
       case "invoice.payment_failed": {
         const invoice = event.data.object;
-        const subscriptionId = invoice.parent?.subscription_details.subscription;
+        const subscriptionId =
+          invoice.parent?.subscription_details.subscription;
         if (!subscriptionId) break;
 
         await UserSubscription.findOneAndUpdate(
           { stripeSubscriptionId: subscriptionId },
           { status: "inactive" },
-          { upsert: true }
+          { upsert: true },
         );
 
         break;
@@ -205,9 +204,20 @@ export const stripeWebhookHandle = async (req, res) => {
         const sub = event.data.object;
         const price = sub.items?.data?.[0]?.price;
 
-        const startDate = toDateOrNull(sub.current_period_start);
-        const endDate = toDateOrNull(sub.current_period_end);
+        const startSeconds =
+          sub.current_period_start ??
+          sub.start_date ??
+          sub.billing_cycle_anchor ??
+          sub.created;
 
+        const endSeconds =
+          sub.current_period_end ??
+          sub.cancel_at ??
+          null;
+
+        console.log("sub", sub);
+        const startDate = toDateOrNull(startSeconds);
+        const endDate = toDateOrNull(endSeconds);
 
         await UserSubscription.findOneAndUpdate(
           { stripeSubscriptionId: sub.id },
@@ -219,7 +229,7 @@ export const stripeWebhookHandle = async (req, res) => {
             startDate: startDate,
             endDate: endDate,
           },
-          { upsert: true, new: true }
+          { upsert: true, new: true },
         );
 
         break;
@@ -231,7 +241,7 @@ export const stripeWebhookHandle = async (req, res) => {
         await UserSubscription.findOneAndUpdate(
           { stripeSubscriptionId: sub.id },
           { status: "cancelled", cancelAtPeriodEnd: false },
-          { upsert: true }
+          { upsert: true },
         );
 
         break;
@@ -247,6 +257,3 @@ export const stripeWebhookHandle = async (req, res) => {
     return res.status(500).send("Webhook handler failed");
   }
 };
-
-
-

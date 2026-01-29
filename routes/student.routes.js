@@ -19,11 +19,13 @@ import {
   playChapterHandle
 } from "../controllers/student/student.controller.js";
 
+import { cancelSubscriptionHandle } from "../controllers/student/subscription.controller.js";
+
 import { createSubscriptionCheckout } from "../controllers/admin/plan.controller.js";
 import { auth } from "../middlewares/auth.js";
-import { setUploadPath } from "../utils/helper.js";
+
 import {uploadProfileImage} from "../middlewares/s3upload.js";
-import { upload } from "../middlewares/multer.js";
+
 
 const studentRouter = Router();
 
@@ -49,5 +51,6 @@ studentRouter.put("/teacher-review/:id", auth, updateTeacherReviewHandle);
 
 studentRouter.get("/subscription", auth, mySubscriptionHandle);
 studentRouter.post("/subscription/checkout/:id", auth, createSubscriptionCheckout);
+studentRouter.put("/subscription/cancel", auth, cancelSubscriptionHandle);
 
 export default studentRouter;

@@ -6,6 +6,8 @@ import {
   getPlansHandle,
   getPlanHandle,
 } from "../controllers/admin/plan.controller.js";
+
+import { allStudentHandle } from "../controllers/admin/admin.controller.js";
 import { auth, isAdmin } from "../middlewares/auth.js";
 
 const adminRouter = Router();
@@ -15,5 +17,8 @@ adminRouter.delete("/plan/:id", auth, isAdmin, deletePlanHandle);
 adminRouter.put("/plan/:id", auth, isAdmin, updatePlanHandle);
 adminRouter.get("/all/plans", auth, getPlansHandle);
 adminRouter.get("/plan/:id", auth, getPlanHandle);
+
+//STUDENT
+adminRouter.get("/all/students", auth, isAdmin, allStudentHandle);
 
 export default adminRouter;
