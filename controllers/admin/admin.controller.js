@@ -49,7 +49,7 @@ export const studentHandle = async(req, res)=>{
         }
 
         const student = await Student.findById(id).select(
-            "-password -__v -stripeCustomerId -googleId -passwordResetToken -linkExpireAt -actToken",
+            "-password -__v -stripeCustomerId -googleId -passwordResetToken -linkExpireAt -actToken -updatedAt",
         );
         if (!student) {
             return res.status(404).json(new ApiResponse(404, {}, Msg.USER_NOT_FOUND));

@@ -7,7 +7,7 @@ import {
   getPlanHandle,
 } from "../controllers/admin/plan.controller.js";
 
-import { allStudentHandle } from "../controllers/admin/admin.controller.js";
+import { allStudentHandle, studentHandle } from "../controllers/admin/admin.controller.js";
 import { auth, isAdmin } from "../middlewares/auth.js";
 
 const adminRouter = Router();
@@ -20,5 +20,6 @@ adminRouter.get("/plan/:id", auth, getPlanHandle);
 
 //STUDENT
 adminRouter.get("/all/students", auth, isAdmin, allStudentHandle);
+adminRouter.get("/student/:id", auth, isAdmin, studentHandle);
 
 export default adminRouter;
