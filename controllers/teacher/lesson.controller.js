@@ -500,6 +500,8 @@ export const deleteQuizHandler = async (req, res) => {
       return res.status(404).json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND));
     }
 
+    await deleteFromS3(quiz.thumbnail);
+
     return res.status(200).json(new ApiResponse(200, {}, Msg.DATA_DELETED));
   } catch (error) {
     console.error("Error deleting quiz:", error);
@@ -714,6 +716,7 @@ export const deleteQuestHandle = async (req, res) => {
     }
     await deleteFromS3(quest.thumbnail?.key);
     await Quest.deleteOne({ _id: id, teacherId: req.user.id });
+    await Quiz.deleteMany({ questId: id, teacherId: req.user.id });
     return res.status(200).json(new ApiResponse(200, { id }, Msg.DATA_DELETED));
   } catch (error) {
     console.error("Error deleting quest:", error);
