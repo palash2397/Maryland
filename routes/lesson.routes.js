@@ -18,7 +18,8 @@ import {
   questByIdHandle,
   searchLessonsHandler,
   createChapterHandle,
-  deleteChapterHandle
+  deleteChapterHandle,
+  generateChapterThumbnail
 } from "../controllers/teacher/lesson.controller.js";
 
 const lessonRouter = Router();
@@ -46,6 +47,7 @@ lessonRouter.put("/update-quest", auth, uploadQuestThumbnail, updateQuestHandler
 
 lessonRouter.post("/chapter", auth, uploadChapter, createChapterHandle);
 lessonRouter.delete("/chapter/:id", auth, deleteChapterHandle);
+lessonRouter.patch("/generate/chapter/thumbnail/:id", auth, generateChapterThumbnail);
 
 // lessonRouter.post("/test-upload", uploadLessonFiles, (req, res) => {
 //   try {

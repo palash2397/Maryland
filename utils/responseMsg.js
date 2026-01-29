@@ -84,6 +84,12 @@ export const Msg = {
   CHAPTER_DETAIL: `Chapter detail fetched successfully`,
   CHAPTER_FETCHED: `Chapters fetched successfully`,
 
+  // Thumbnail
+  THUMBNAIL_GENERATED: `Thumbnail generated successfully`,
+  THUMBNAIL_GENERATION_FAILED: `Thumbnail generation failed`,
+  THUMBNAIL_GENERATION_ERROR: `Thumbnail generation error`,
+  THUMBNAIL_GENERATION_LIMIT_EXCEEDED: `Thumbnail generation limit exceeded`,
+
   // Subscription
   SUBSCRIPTION_FETCHED: `Subscription fetched successfully`,
   SUBSCRIPTION_CREATED: `Subscription created successfully`,

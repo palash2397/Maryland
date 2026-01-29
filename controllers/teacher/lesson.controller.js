@@ -1,10 +1,17 @@
 import Joi from "joi";
+import fs from "fs";
+import os from "os";
+import path from "path";
+
 import Jwt from "jsonwebtoken";
 
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { Msg } from "../../utils/responseMsg.js";
 import { getSignedFileUrl } from "../../utils/s3SignedUrl.js";
 import { deleteFromS3 } from "../../utils/s3delete.js";
+import { generateThumbnail } from "../../utils/generateThumbnail.js";
+import { downloadFromS3 } from "../../utils/downloadFromS3.js";
+import { uploadThumbToS3 } from "../../utils/uploadThumbOnS3.js";
 
 // import Teacher from "../../models/teacher/teacher.js";
 import Lesson from "../../models/lesson/lesson.js";
@@ -32,15 +39,13 @@ export const createLessonHandle = async (req, res) => {
         .json(new ApiResponse(400, {}, error.details[0].message));
     }
 
-    const thumbnailFile = req.files?.thumbnail?.[0] || null;
-
     const lesson = await Lesson.create({
       teacherId: req.user.id,
       title,
       topic,
       difficultyLevel,
       description,
-      thumbnail: thumbnailFile ? thumbnailFile.key : null,
+      thumbnail: null,
     });
 
     return res.status(201).json(new ApiResponse(201, lesson, Msg.DATA_ADDED));
@@ -108,6 +113,49 @@ export const createChapterHandle = async (req, res) => {
   }
 };
 
+export const generateChapterThumbnail = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const video = await Video.findById(id);
+    if (!video) {
+      return res.status(404).json({ message: "Video not found" });
+    }
+
+    if (video.thumbnail) {
+      return res.json({ message: "Thumbnail already exists" });
+    }
+
+    const videoUrl = `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${video.videoUrl}`;
+
+    const tempVideo = path.join(os.tmpdir(), `${Date.now()}.mp4`);
+    const tempThumb = path.join(os.tmpdir(), `${Date.now()}.png`);
+
+    // 1️⃣ download video
+    await downloadFromS3(video.videoUrl, tempVideo);
+
+    // 2️⃣ generate thumbnail
+    await generateThumbnail(tempVideo, tempThumb);
+
+    // 3️⃣ upload to S3
+    const thumbKey = `lesson/thumbnails/${Date.now()}.png`;
+    await uploadThumbToS3(tempThumb, thumbKey);
+
+    // 4️⃣ update DB
+    video.thumbnail = thumbKey;
+    await video.save();
+
+    // cleanup
+    fs.unlinkSync(tempVideo);
+    fs.unlinkSync(tempThumb);
+
+    return res.status(200).json(new ApiResponse(200, {}, Msg.THUMBNAIL_GENERATED));
+  } catch (err) {
+    console.error("Error generating thumbnail:", err);
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+};
+
 export const allChaptersByLessonId = async (req, res) => {
   try {
     const { id } = req.params;
@@ -116,11 +164,8 @@ export const allChaptersByLessonId = async (req, res) => {
     const chapters = await Video.find({ lessonId: id, teacherId }).lean();
 
     if (!chapters || chapters.length === 0) {
-      return res
-        .status(404)
-        .json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND));
+      return res.status(404).json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND));
     }
-
 
     return res
       .status(200)
@@ -130,7 +175,6 @@ export const allChaptersByLessonId = async (req, res) => {
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
-
 
 export const deleteChapterHandle = async (req, res) => {
   try {
@@ -144,9 +188,7 @@ export const deleteChapterHandle = async (req, res) => {
         .json(new ApiResponse(404, {}, Msg.CHAPTER_NOT_FOUND));
     }
 
-    return res
-      .status(200)
-      .json(new ApiResponse(200, {}, Msg.CHAPTER_DELETE));
+    return res.status(200).json(new ApiResponse(200, {}, Msg.CHAPTER_DELETE));
   } catch (error) {
     console.error("Error deleting chapter:", error);
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
@@ -173,7 +215,7 @@ export const allLessonHandle = async (req, res) => {
             videoUrl: chapter.videoUrl
               ? await getSignedFileUrl(chapter.videoUrl, 3600)
               : null,
-          }))
+          })),
         ),
       };
     };
@@ -192,35 +234,26 @@ export const allLessonHandle = async (req, res) => {
 
       const data = await formatLessonWithChapters(lesson);
 
-      return res
-        .status(200)
-        .json(new ApiResponse(200, data, Msg.DATA_FETCHED));
+      return res.status(200).json(new ApiResponse(200, data, Msg.DATA_FETCHED));
     }
 
     /* ---------------- ALL LESSONS ---------------- */
     const lessons = await Lesson.find({ teacherId }).lean();
 
     if (!lessons.length) {
-      return res
-        .status(404)
-        .json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND));
+      return res.status(404).json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND));
     }
 
     const data = await Promise.all(
-      lessons.map((lesson) => formatLessonWithChapters(lesson))
+      lessons.map((lesson) => formatLessonWithChapters(lesson)),
     );
 
-    return res
-      .status(200)
-      .json(new ApiResponse(200, data, Msg.DATA_FETCHED));
+    return res.status(200).json(new ApiResponse(200, data, Msg.DATA_FETCHED));
   } catch (error) {
     console.error("Error fetching lessons:", error);
-    return res
-      .status(500)
-      .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
-
 
 export const deleteLessonHandle = async (req, res) => {
   try {
