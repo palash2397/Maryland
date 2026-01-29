@@ -561,62 +561,86 @@ export const lessonByIdHandle = async (req, res) => {
 export const playChapterHandle = async (req, res) => {
   try {
     const { chapterId } = req.params;
-    const schema = Joi.object({
-      chapterId: Joi.string().required(),
-    });
 
-    const { error } = schema.validate(req.params);
-    if (error) {
-      return res
-        .status(400)
-        .json(new ApiResponse(400, {}, error.details[0].message));
-    }
+    const chapter = await Video.findOne({
+      _id: chapterId,
+      status: "published",
+    }).lean();
 
-    const chapter = await Video.findById(chapterId).lean();
-    if (!chapter || chapter.status !== "published") {
+    if (!chapter) {
       return res
         .status(404)
-        .json(new ApiResponse(404, {}, Msg.CHAPTER_NOT_FOUND));
+        .json(new ApiResponse(404, {}, "Chapter not found"));
     }
 
-    // 2. Free chapter → allow immediately
+    // ✅ FREE chapter → allow everyone
     if (chapter.accessType === "free") {
-      const signedUrl = await getSignedFileUrl(chapter.videoUrl);
-
-      return res
-        .status(200)
-        .json(new ApiResponse(200, { videoUrl: signedUrl }, "Chapter playing"));
+      return res.status(200).json(
+        new ApiResponse(
+          200,
+          { videoUrl: await getSignedFileUrl(chapter.videoUrl) },
+          Msg.DATA_FETCHED
+        )
+      );
     }
 
-    // 3. Paid chapter → check subscription
+    // 🔒 PAID chapter → subscription required
     const subscription = await UserSubscription.findOne({
       userId: req.user.id,
       status: "active",
     }).lean();
 
-    const isValidSubscription =
-      subscription &&
-      (!subscription.endDate || subscription.endDate >= new Date());
+    if (!subscription) {
+      return res
+        .status(403)
+        .json(new ApiResponse(403, {}, Msg.SUBSCRIPTION_ACTIVE_REQUIRED));
+    }
 
-    if (!isValidSubscription) {
+    // ⏰ Expiry check (reuse your logic)
+    if (subscription.endDate && subscription.endDate < new Date()) {
+      return res
+        .status(403)
+        .json(new ApiResponse(403, {}, Msg.SUBSCRIPTION_EXPIRED));
+    }
+
+    // 📊 Plan comparison
+    const PLAN_ORDER = {
+      free: 0,
+      pro: 1,
+      premium: 2,
+    };
+
+    if (
+      PLAN_ORDER[subscription.plan] <
+      PLAN_ORDER[chapter.accessType]
+    ) {
       return res
         .status(403)
         .json(
-          new ApiResponse(403, {}, "Please subscribe to access this chapter"),
+          new ApiResponse(
+            403,
+            {},
+            Msg.SUBSCRIPTION_PLAN_REQUIRED
+          )
         );
     }
 
-    // 4. Access granted → generate signed URL
-    const signedUrl = await getSignedFileUrl(chapter.videoUrl);
-
-    return res
-      .status(200)
-      .json(new ApiResponse(200, { videoUrl: signedUrl }, "Chapter playing"));
+    // ✅ All checks passed
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        { videoUrl: await getSignedFileUrl(chapter.videoUrl) },
+        Msg.DATA_FETCHED
+      )
+    );
   } catch (error) {
     console.error("Play chapter error:", error);
-    return res.status(500).json(new ApiResponse(500, {}, "Server error"));
+    return res
+      .status(500)
+      .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
+
 
 export const addTeacherReviewHandle = async (req, res) => {
   try {

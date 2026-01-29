@@ -99,6 +99,7 @@ export const Msg = {
   SUBSCRIPTION_CUSTOMER_ALREADY_EXISTS: `Subscription customer already exists`,
   SUBSCRIPTION_ACTIVE_REQUIRED: `active subscrition is required`,
   SUBSCRIPTION_CANCELLED_AT_PERIOD_END: `Subscription will be cancelled at end of billing period`,
+  SUBSCRIPTION_PLAN_REQUIRED: `Subscription plan required`,
 
 
   // Plan
