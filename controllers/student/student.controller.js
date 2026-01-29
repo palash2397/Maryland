@@ -484,7 +484,7 @@ export const lessonChaptersHandle = async (req, res) => {
       lessonId,
       status: "published",
     })
-      .select("title duration accessType order")
+      .select("title duration accessType order thumbnail")
       .sort({ order: 1 })
       .lean();
 
@@ -504,29 +504,41 @@ export const lessonChaptersHandle = async (req, res) => {
       subscription &&
       (!subscription.endDate || subscription.endDate >= new Date());
 
-    const formattedChapters = chapters.map((chapter) => {
-      if (chapter.accessType === "free") {
+    const formattedChapters = await Promise.all(
+      chapters.map(async (chapter) => {
+        const signedThumb = chapter.thumbnail
+          ? await getSignedFileUrl(chapter.thumbnail)
+          : null;
+
+        // FREE
+        if (chapter.accessType === "free") {
+          return {
+            ...chapter,
+            thumbnail: signedThumb,
+            isLocked: false,
+            requiresSubscription: false,
+          };
+        }
+
+        // NO SUBSCRIPTION
+        if (!hasActiveSubscription) {
+          return {
+            ...chapter,
+            thumbnail: signedThumb,
+            isLocked: true,
+            requiresSubscription: true,
+          };
+        }
+
+        // HAS SUBSCRIPTION
         return {
           ...chapter,
+          thumbnail: signedThumb,
           isLocked: false,
           requiresSubscription: false,
         };
-      }
-
-      if (!hasActiveSubscription) {
-        return {
-          ...chapter,
-          isLocked: true,
-          requiresSubscription: true,
-        };
-      }
-
-      return {
-        ...chapter,
-        isLocked: false,
-        requiresSubscription: false,
-      };
-    });
+      }),
+    );
 
     return res
       .status(200)
@@ -575,13 +587,15 @@ export const playChapterHandle = async (req, res) => {
 
     // ✅ FREE chapter → allow everyone
     if (chapter.accessType === "free") {
-      return res.status(200).json(
-        new ApiResponse(
-          200,
-          { videoUrl: await getSignedFileUrl(chapter.videoUrl) },
-          Msg.DATA_FETCHED
-        )
-      );
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            { videoUrl: await getSignedFileUrl(chapter.videoUrl) },
+            Msg.DATA_FETCHED,
+          ),
+        );
     }
 
     // 🔒 PAID chapter → subscription required
@@ -610,37 +624,27 @@ export const playChapterHandle = async (req, res) => {
       premium: 2,
     };
 
-    if (
-      PLAN_ORDER[subscription.plan] <
-      PLAN_ORDER[chapter.accessType]
-    ) {
+    if (PLAN_ORDER[subscription.plan] < PLAN_ORDER[chapter.accessType]) {
       return res
         .status(403)
-        .json(
-          new ApiResponse(
-            403,
-            {},
-            Msg.SUBSCRIPTION_PLAN_REQUIRED
-          )
-        );
+        .json(new ApiResponse(403, {}, Msg.SUBSCRIPTION_PLAN_REQUIRED));
     }
 
     // ✅ All checks passed
-    return res.status(200).json(
-      new ApiResponse(
-        200,
-        { videoUrl: await getSignedFileUrl(chapter.videoUrl) },
-        Msg.DATA_FETCHED
-      )
-    );
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          { videoUrl: await getSignedFileUrl(chapter.videoUrl) },
+          Msg.DATA_FETCHED,
+        ),
+      );
   } catch (error) {
     console.error("Play chapter error:", error);
-    return res
-      .status(500)
-      .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
-
 
 export const addTeacherReviewHandle = async (req, res) => {
   try {
@@ -761,17 +765,15 @@ export const mySubscriptionHandle = async (req, res) => {
             cancelAtPeriodEnd: false,
             canAccessPaidContent: false,
           },
-          Msg.SUBSCRIPTION_NOT_FOUND
-        )
+          Msg.SUBSCRIPTION_NOT_FOUND,
+        ),
       );
     }
 
     // ✅ Check expiry
-    const isExpired =
-      subscription.endDate && subscription.endDate < new Date();
+    const isExpired = subscription.endDate && subscription.endDate < new Date();
 
-    const isActive =
-      subscription.status === "active" && !isExpired;
+    const isActive = subscription.status === "active" && !isExpired;
 
     return res.status(200).json(
       new ApiResponse(
@@ -783,14 +785,11 @@ export const mySubscriptionHandle = async (req, res) => {
           cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
           canAccessPaidContent: isActive,
         },
-        Msg.SUBSCRIPTION_FETCHED
-      )
+        Msg.SUBSCRIPTION_FETCHED,
+      ),
     );
   } catch (error) {
     console.error("Error fetching subscription:", error);
-    return res
-      .status(500)
-      .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
-
