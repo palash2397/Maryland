@@ -44,3 +44,9 @@ export const uploadChapter = s3Uploader({
 }).single("video");
 
 
+export const uploadAvatarImage = s3Uploader({
+  avatar: "teachers/avatars",
+}).single("avatar");
+
+
+

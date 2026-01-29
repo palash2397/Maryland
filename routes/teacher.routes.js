@@ -9,12 +9,13 @@ import {
   resetPasswordHandle,
   changePasswordHandle,
   myProfileHandle,
-  dashboardHandle
+  dashboardHandle,
+  updateProfileHandle,
 } from "../controllers/teacher/teacher.controller.js";
 import { setUploadPath } from "../utils/helper.js";
 import { auth } from "../middlewares/auth.js";
 import { upload } from "../middlewares/multer.js";
-import { uploadCertificate } from "../middlewares/s3upload.js";
+import { uploadCertificate, uploadAvatarImage } from "../middlewares/s3upload.js";
 
 const teacherRouter = Router();
 
@@ -31,6 +32,7 @@ teacherRouter.post("/reset-password", resetPasswordHandle);
 teacherRouter.put("/change-password", auth, changePasswordHandle);
 teacherRouter.get("/my-profile", auth, myProfileHandle);
 teacherRouter.get("/dashboard", auth, dashboardHandle);
+teacherRouter.patch("/profile/update", auth, uploadAvatarImage, updateProfileHandle);
 
 
 export default teacherRouter;

@@ -7,7 +7,18 @@ import {
   getPlanHandle,
 } from "../controllers/admin/plan.controller.js";
 
-import { allStudentHandle, studentHandle, changeAccountStatusHandle } from "../controllers/admin/admin.controller.js";
+import {
+  allStudentHandle,
+  studentHandle,
+  changeAccountStatusHandle,
+} from "../controllers/admin/admin.controller.js";
+
+import {
+  allTeacherHandle,
+  teacherHandle,
+  teacherAccountStatusHandle,
+} from "../controllers/admin/teacher.controller.js";
+
 import { auth, isAdmin } from "../middlewares/auth.js";
 
 const adminRouter = Router();
@@ -22,5 +33,10 @@ adminRouter.get("/plan/:id", auth, getPlanHandle);
 adminRouter.get("/all/students", auth, isAdmin, allStudentHandle);
 adminRouter.get("/student/:id", auth, isAdmin, studentHandle);
 adminRouter.patch("/student/:id", auth, isAdmin, changeAccountStatusHandle);
+
+//TEACHER
+adminRouter.get("/all/teachers", auth, isAdmin, allTeacherHandle);
+adminRouter.get("/teacher/:id", auth, isAdmin, teacherHandle);
+adminRouter.patch("/teacher/:id", auth, isAdmin, teacherAccountStatusHandle);
 
 export default adminRouter;

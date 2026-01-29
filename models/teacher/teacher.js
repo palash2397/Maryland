@@ -91,6 +91,11 @@ const TeacherSchema = new mongoose.Schema(
       default: null,
     },
 
+    avatar: {
+      type: String,
+      default: null,
+    },
+
     isVerified: {
       type: Boolean,
       default: false,

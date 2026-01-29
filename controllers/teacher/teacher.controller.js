@@ -446,6 +446,43 @@ export const myProfileHandle = async (req, res) => {
   }
 };
 
+export const updateProfileHandle = async(req, res)=>{
+  let avatarPath =req.file?.key || null;;
+  try {
+    const { firstName, lastName, subjectsYouTeach } = req.body;
+    const schema = Joi.object({
+      firstName: Joi.string().optional(),
+      lastName: Joi.string().optional(),
+      subjectsYouTeach: Joi.array().optional(),
+    });
+    
+    const { error } = schema.validate(req.body);
+    if (error) {
+      return res.status(400).json(new ApiResponse(400, {}, error.details[0].message));
+    }
+    
+    const user = await Teacher.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json(new ApiResponse(404, {}, Msg.USER_NOT_FOUND));
+    }
+    
+    user.firstName = firstName || user.firstName;
+    user.lastName = lastName || user.lastName;
+    user.subjectsYouTeach = subjectsYouTeach || user.subjectsYouTeach;
+    user.avatar = avatarPath || user.avatar;
+    if (avatarPath) {
+      deleteFile(user.avatar);
+    }
+    await user.save();
+    
+    return res.status(200).json(new ApiResponse(200, {}, Msg.USER_UPDATED));
+  } catch (error) {
+    console.error("Error updating teacher:", error);
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+
+}
+
 
 export const dashboardHandle = async (req, res) => {
   try {
