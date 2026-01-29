@@ -14,6 +14,12 @@ const quizSchema = new mongoose.Schema(
       required: true,
     },
 
+    questId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Quest",
+      required: true,
+    },
+
     title: {
       type: String,
       required: true,

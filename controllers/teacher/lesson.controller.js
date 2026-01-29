@@ -149,7 +149,9 @@ export const generateChapterThumbnail = async (req, res) => {
     fs.unlinkSync(tempVideo);
     fs.unlinkSync(tempThumb);
 
-    return res.status(200).json(new ApiResponse(200, {}, Msg.THUMBNAIL_GENERATED));
+    return res
+      .status(200)
+      .json(new ApiResponse(200, {}, Msg.THUMBNAIL_GENERATED));
   } catch (err) {
     console.error("Error generating thumbnail:", err);
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
@@ -351,11 +353,13 @@ export const searchLessonsHandler = async (req, res) => {
 
 export const quizzHandle = async (req, res) => {
   try {
-    const { title, lessonId, questions } = req.body;
+    const { title, lessonId, questId, questions } = req.body;
+    console.log(typeof(questId));
 
     const schema = Joi.object({
       title: Joi.string().required(),
       lessonId: Joi.string().required(),
+      questId: Joi.string().required(),
       questions: Joi.array()
         .items(
           Joi.object({
@@ -388,17 +392,24 @@ export const quizzHandle = async (req, res) => {
       teacherId: req.user.id,
     });
     if (!lesson) {
-      return res.status(404).json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND));
+      return res.status(404).json(new ApiResponse(404, {}, Msg.LESSON_NOT_FOUND));
+    }
+
+
+    const quest = await Quest.findOne({ _id: questId });
+    if (!quest) {
+      return res.status(404).json(new ApiResponse(404, {}, Msg.QUEST_NOT_FOUND));
     }
 
     const quiz = await Quiz.create({
       teacherId: req.user.id,
       lessonId,
+      questId,
       title,
       questions,
     });
 
-    return res.status(201).json(new ApiResponse(201, quiz, Msg.DATA_ADDED));
+    return res.status(201).json(new ApiResponse(201, quiz, Msg.QUIZZ_CREATED));
   } catch (error) {
     console.error("Error creating quiz:", error);
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
@@ -496,39 +507,144 @@ export const deleteQuizHandler = async (req, res) => {
   }
 };
 
-export const createQuestHandle = async (req, res) => {
-  let thumbnailPath = null;
+// export const createQuestHandle = async (req, res) => {
+//   let thumbnailPath = null;
 
-  if (req.file) {
-    thumbnailPath = {
-      key: req.file.key,
-      url: req.file.location,
-    };
-  }
+//   if (req.file) {
+//     thumbnailPath = {
+//       key: req.file.key,
+//       url: req.file.location,
+//     };
+//   }
+//   try {
+//     const {
+//       title,
+//       description,
+//       difficulty,
+//       rewardPoints,
+//       numberOfTasks,
+//       timeLimit,
+//       lessonId,
+//       quizId,
+//     } = req.body;
+
+//     const schema = Joi.object({
+//       title: Joi.string().required(),
+//       description: Joi.string().required(),
+//       difficulty: Joi.string().valid("easy", "medium", "hard").default("easy"),
+//       rewardPoints: Joi.number().required().min(0),
+//       numberOfTasks: Joi.number().required().min(1),
+//       timeLimit: Joi.number().required().min(1),
+//       lessonId: Joi.string().optional(),
+//       quizId: Joi.string().optional(),
+//     });
+
+//     const { error } = schema.validate(req.body);
+//     if (error) {
+//       return res
+//         .status(400)
+//         .json(new ApiResponse(400, {}, error.details[0].message));
+//     }
+
+//     const lesson = await Lesson.findOne({
+//       _id: lessonId,
+//       teacherId: req.user.id,
+//     });
+//     if (!lesson) {
+//       return res.status(404).json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND));
+//     }
+
+//     const quiz = await Quiz.findOne({ _id: quizId, teacherId: req.user.id });
+//     if (!quiz) {
+//       return res.status(404).json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND));
+//     }
+
+//     const quest = await Quest.create({
+//       teacherId: req.user.id,
+//       title,
+//       description,
+//       difficulty,
+//       rewardPoints,
+//       numberOfTasks,
+//       timeLimit,
+//       lessonId,
+//       quizId,
+//       thumbnail: thumbnailPath || null,
+//     });
+
+//     return res.status(201).json(new ApiResponse(201, quest, Msg.DATA_ADDED));
+//   } catch (error) {
+//     console.error("Error creating quest:", error);
+//     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+//   }
+// };
+
+export const createQuestHandle = async (req, res) => {
   try {
+    // Thumbnail handling
+    let thumbnail = null;
+    if (req.file) {
+      thumbnail = req.file.key;
+    }
+
     const {
       title,
       description,
+      questType,
+      targetGrade,
+      ageGroup,
+
       difficulty,
-      rewardPoints,
-      numberOfTasks,
       timeLimit,
+      maxAttempts,
+      questionCount,
+      passingScore,
+
+      xpPoints,
+      coins,
+      badge,
+      bonusCondition,
+
+      prerequisiteLessons,
+      minimumPreviousScore,
+
       lessonId,
-      quizId,
+      isPublished,
+      isFeatured,
+      leaderboardEnabled,
     } = req.body;
 
+    // ✅ Validation
     const schema = Joi.object({
       title: Joi.string().required(),
       description: Joi.string().required(),
+
+      questType: Joi.string().valid("solo").default("solo"),
+      targetGrade: Joi.string().required(),
+      ageGroup: Joi.string().required(),
+
       difficulty: Joi.string().valid("easy", "medium", "hard").default("easy"),
-      rewardPoints: Joi.number().required().min(0),
-      numberOfTasks: Joi.number().required().min(1),
-      timeLimit: Joi.number().required().min(1),
-      lessonId: Joi.string().optional(),
-      quizId: Joi.string().optional(),
+      timeLimit: Joi.number().min(1).required(),
+      maxAttempts: Joi.number().min(1).default(1),
+      questionCount: Joi.number().min(1).required(),
+      passingScore: Joi.number().min(1).max(100).required(),
+
+      xpPoints: Joi.number().min(0).default(0),
+      coins: Joi.number().min(0).default(0),
+      badge: Joi.string().allow(null, ""),
+      bonusCondition: Joi.string().allow(null, ""),
+
+      prerequisiteLessons: Joi.array().items(Joi.string()),
+      minimumPreviousScore: Joi.number().min(0).max(100).default(0),
+
+      lessonId: Joi.string().allow(null),
+
+      isPublished: Joi.boolean().default(false),
+      isFeatured: Joi.boolean().default(false),
+      leaderboardEnabled: Joi.boolean().default(false),
     });
 
-    const { error } = schema.validate(req.body);
+    const { error, value } = schema.validate(req.body);
     if (error) {
       return res
         .status(400)
@@ -540,28 +656,49 @@ export const createQuestHandle = async (req, res) => {
       teacherId: req.user.id,
     });
     if (!lesson) {
-      return res.status(404).json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND));
+      return res
+        .status(404)
+        .json(new ApiResponse(404, {}, Msg.LESSON_NOT_FOUND));
     }
 
-    const quiz = await Quiz.findOne({ _id: quizId, teacherId: req.user.id });
-    if (!quiz) {
-      return res.status(404).json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND));
-    }
-
+    // ✅ Create quest
     const quest = await Quest.create({
       teacherId: req.user.id,
+
       title,
       description,
+      questType,
+      targetGrade,
+      ageGroup,
+
       difficulty,
-      rewardPoints,
-      numberOfTasks,
       timeLimit,
-      lessonId,
-      quizId,
-      thumbnail: thumbnailPath || null,
+      maxAttempts,
+      questionCount,
+      passingScore,
+
+      rewards: {
+        xpPoints,
+        coins,
+        badge: badge || null,
+        bonusCondition: bonusCondition || null,
+      },
+
+      prerequisites: {
+        lessons: prerequisiteLessons || [],
+        minimumScore: minimumPreviousScore,
+      },
+
+      lessonId: lessonId || null,
+
+      thumbnail,
+
+      isPublished,
+      isFeatured,
+      leaderboardEnabled,
     });
 
-    return res.status(201).json(new ApiResponse(201, quest, Msg.DATA_ADDED));
+    return res.status(201).json(new ApiResponse(201, quest, Msg.QUEST_CREATED));
   } catch (error) {
     console.error("Error creating quest:", error);
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));

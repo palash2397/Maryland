@@ -117,4 +117,26 @@ export const Msg = {
   INVALID_OR_UNPAID_PLAN: `Invalid or unpaid plan`,
   PLAN_DETAIL: `Plan detail fetched successfully`,
 
+
+  // Quest
+  QUEST_CREATED: `Quest created successfully`,
+  QUEST_NOT_FOUND: `Quest not found`,
+  QUEST_DELETE: `Quest deleted successfully`,
+  QUEST_UPDATE: `Quest updated successfully`,
+  QUEST_LIST: `Quest list fetched successfully`,
+  QUEST_DETAIL: `Quest detail fetched successfully`,
+  QUEST_FETCHED: `Quest fetched successfully`,
+
+
+  // Quizz
+  QUIZZ_CREATED: `Quizz created successfully`,
+  QUIZZ_NOT_FOUND: `Quizz not found`,
+  QUIZZ_DELETE: `Quizz deleted successfully`,
+  QUIZZ_UPDATE: `Quizz updated successfully`,
+  QUIZZ_LIST: `Quizz list fetched successfully`,
+  QUIZZ_DETAIL: `Quizz detail fetched successfully`,
+  QUIZZ_FETCHED: `Quizz fetched successfully`,
+
+
+
 };
