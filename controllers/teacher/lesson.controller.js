@@ -3,7 +3,6 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 
-
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { Msg } from "../../utils/responseMsg.js";
 import { getSignedFileUrl } from "../../utils/s3SignedUrl.js";
@@ -353,7 +352,7 @@ export const searchLessonsHandler = async (req, res) => {
 export const quizzHandle = async (req, res) => {
   try {
     const { title, lessonId, questId, questions } = req.body;
-    console.log(typeof(questId));
+    console.log(typeof questId);
 
     const schema = Joi.object({
       title: Joi.string().required(),
@@ -391,13 +390,16 @@ export const quizzHandle = async (req, res) => {
       teacherId: req.user.id,
     });
     if (!lesson) {
-      return res.status(404).json(new ApiResponse(404, {}, Msg.LESSON_NOT_FOUND));
+      return res
+        .status(404)
+        .json(new ApiResponse(404, {}, Msg.LESSON_NOT_FOUND));
     }
-
 
     const quest = await Quest.findOne({ _id: questId });
     if (!quest) {
-      return res.status(404).json(new ApiResponse(404, {}, Msg.QUEST_NOT_FOUND));
+      return res
+        .status(404)
+        .json(new ApiResponse(404, {}, Msg.QUEST_NOT_FOUND));
     }
 
     const quiz = await Quiz.create({
@@ -852,49 +854,66 @@ export const updateQuestHandler = async (req, res) => {
   }
 };
 
-
-export const quizzByQuestIdHandle = async(req, res)=>{
+export const quizzByQuestIdHandle = async (req, res) => {
   try {
-    const {id}= req.params;
+    const { id } = req.params;
     const quest = await Quest.findById(id);
     if (!quest) {
-      return res.status(404).json(new ApiResponse(404, {}, Msg.QUEST_NOT_FOUND));
-      
+      return res
+        .status(404)
+        .json(new ApiResponse(404, {}, Msg.QUEST_NOT_FOUND));
     }
 
     quest.thumbnail = await getSignedFileUrl(quest.thumbnail);
-    const quizz = await Quiz.find({questId: id});
+    const quizz = await Quiz.find({ questId: id });
     if (!quizz) {
-      return res.status(404).json(new ApiResponse(404, {}, Msg.QUIZZ_NOT_FOUND));
-      
+      return res
+        .status(404)
+        .json(new ApiResponse(404, {}, Msg.QUIZZ_NOT_FOUND));
     }
 
-    const formattedObj  = {
+    const formattedObj = {
       quest,
       quizz,
     };
 
-
-    return res.status(200).json(new ApiResponse(200, formattedObj, Msg.DATA_FETCHED));
-
-    
+    return res
+      .status(200)
+      .json(new ApiResponse(200, formattedObj, Msg.DATA_FETCHED));
   } catch (error) {
-    console.log(`Error getting quizz by quest id: ${error}`)
+    console.log(`Error getting quizz by quest id: ${error}`);
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
-    
   }
-}
+};
 
-
-export const allQuestHandle = async(req, res)=>{
+export const allQuestHandle = async (req, res) => {
   try {
-    const quests = await Quest.find();
+    const quests = await Quest.find({ isPublished: true }).populate(
+      "teacherId",
+      "firstName lastName email",
+    );
+    
     if (!quests || quests.length === 0) {
-      return res.status(404).json(new ApiResponse(404, {}, Msg.QUEST_NOT_FOUND));
+      return res
+        .status(404)
+        .json(new ApiResponse(404, {}, Msg.QUEST_NOT_FOUND));
     }
-    return res.status(200).json(new ApiResponse(200, quests, Msg.QUEST_FETCHED));
+
+    const questsWithSignedUrls = await Promise.all(
+      quests.map(async (quest) => {
+        if (quest.thumbnail) {
+          quest.thumbnail = await getSignedFileUrl(quest.thumbnail);
+        }
+        return quest;
+      }),
+    );
+
+    
+    return res
+      .status(200)
+      .json(new ApiResponse(200, questsWithSignedUrls, Msg.QUEST_FETCHED));
   } catch (error) {
-    console.log(`Error getting all quests: ${error}`)
+    console.log(`Error getting all quests: ${error}`);
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
-}
+};
