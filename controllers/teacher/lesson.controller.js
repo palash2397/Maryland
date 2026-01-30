@@ -3,7 +3,6 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 
-import Jwt from "jsonwebtoken";
 
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { Msg } from "../../utils/responseMsg.js";
@@ -852,3 +851,36 @@ export const updateQuestHandler = async (req, res) => {
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
+
+
+export const quizzByQuestIdHandle = async(req, res)=>{
+  try {
+    const {id}= req.params;
+    const quest = await Quest.findById(id);
+    if (!quest) {
+      return res.status(404).json(new ApiResponse(404, {}, Msg.QUEST_NOT_FOUND));
+      
+    }
+
+    quest.thumbnail = await getSignedFileUrl(quest.thumbnail);
+    const quizz = await Quiz.find({questId: id});
+    if (!quizz) {
+      return res.status(404).json(new ApiResponse(404, {}, Msg.QUIZZ_NOT_FOUND));
+      
+    }
+
+    const formattedObj  = {
+      quest,
+      quizz,
+    };
+
+
+    return res.status(200).json(new ApiResponse(200, formattedObj, Msg.DATA_FETCHED));
+
+    
+  } catch (error) {
+    console.log(`Error getting quizz by quest id: ${error}`)
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+    
+  }
+}
