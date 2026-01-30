@@ -165,4 +165,13 @@ export const Msg = {
   ANSWER_NOT_STARTED: `Answer not started`,
 
 
+  // Leaderboard
+  LEADERBOARD_FETCHED: `Leaderboard fetched successfully`,
+  LEADERBOARD_NOT_FOUND: `Leaderboard not found`,
+  LEADERBOARD_ERROR: `Error fetching leaderboard`,
+  LEADERBOARD_DELETED: `Leaderboard deleted successfully`,
+  LEADERBOARD_UPDATED: `Leaderboard updated successfully`,
+  LEADERBOARD_ADDED: `Leaderboard added successfully`,
+
+
 };
