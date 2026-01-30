@@ -143,8 +143,7 @@ export const allQuestHandle = async (req, res) => {
 };
 
 
-
-export const getCurrentQuestQuestionHandle = async (req, res) => {
+export const currentQuestQuestionHandle = async (req, res) => {
   try {
     const { questId } = req.params;
 
@@ -152,7 +151,7 @@ export const getCurrentQuestQuestionHandle = async (req, res) => {
     const studentQuest = await StudentQuest.findOne({
       studentId: req.user.id,
       questId,
-      status: "in_progress",
+      status: "inProgress",
     });
 
     if (!studentQuest) {
@@ -160,7 +159,7 @@ export const getCurrentQuestQuestionHandle = async (req, res) => {
         new ApiResponse(
           404,
           {},
-          "Quest not started or already completed"
+          Msg.QUEST_QUESTION_NOT_STARTED
         )
       );
     }
@@ -170,7 +169,7 @@ export const getCurrentQuestQuestionHandle = async (req, res) => {
     if (!quiz) {
       return res
         .status(404)
-        .json(new ApiResponse(404, {}, Msg.QUIZ_NOT_FOUND));
+        .json(new ApiResponse(404, {}, Msg.QUIZZ_NOT_FOUND));
     }
 
     const index = studentQuest.currentQuestionIndex;
@@ -181,7 +180,7 @@ export const getCurrentQuestQuestionHandle = async (req, res) => {
         new ApiResponse(
           400,
           {},
-          "No more questions remaining"
+          Msg.QUEST_NO_MORE_QUESTIONS
         )
       );
     }
@@ -215,3 +214,5 @@ export const getCurrentQuestQuestionHandle = async (req, res) => {
       .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
+
+

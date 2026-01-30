@@ -147,6 +147,20 @@ export const Msg = {
   QUEST_QUESTION_DELETED: `Quest question deleted successfully`,
   QUEST_QUESTION_UPDATED: `Quest question updated successfully`,
   QUEST_QUESTION_ADDED: `Quest question added successfully`,
+  QUEST_QUESTION_NOT_STARTED: `Quest not started or already completed`,
+  QUEST_NO_MORE_QUESTIONS: `No more questions available`,
+
+  // Qust Question Answer
+  ANSWER_SUBMITTED: `Answer submitted successfully`,
+  ANSWER_NOT_FOUND: `Answer not found`,
+  ANSWER_FETCHED: `Answer fetched successfully`,
+  ANSWER_ERROR: `Error fetching answer`,
+  ANSWER_DELETED: `Answer deleted successfully`,
+  ANSWER_UPDATED: `Answer updated successfully`,
+  ANSWER_ADDED: `Answer added successfully`,
+  ANSWER_REQUIRED: `Answer required`,
+  ANSWER_LIMIT_EXCEEDED: `Answer limit exceeded`,
+  ANSWER_NOT_STARTED: `Answer not started`,
 
 
 };
