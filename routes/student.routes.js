@@ -19,7 +19,8 @@ import {
   playChapterHandle,
 } from "../controllers/student/student.controller.js";
 
-import { quizzByQuestIdHandle, allQuestHandle } from "../controllers/teacher/lesson.controller.js";
+import { quizzByQuestIdHandle } from "../controllers/teacher/lesson.controller.js";
+import { startQuestHandle, allQuestHandle } from "../controllers/student/contest.controller.js";
 
 import { cancelSubscriptionHandle } from "../controllers/student/subscription.controller.js";
 
@@ -66,5 +67,6 @@ studentRouter.put("/subscription/cancel", auth, cancelSubscriptionHandle);
 
 studentRouter.get("/quest/:id", auth, checkSubscription, quizzByQuestIdHandle);
 studentRouter.get("/quests", auth, checkSubscription, allQuestHandle);
+studentRouter.post("/quest/start/:questId", auth, checkSubscription, startQuestHandle);
 
 export default studentRouter;
