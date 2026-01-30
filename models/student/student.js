@@ -60,6 +60,10 @@ const studentSchema = new mongoose.Schema(
       default: null,
     },
 
+    xp: { type: Number, default: 0 },
+    coins: { type: Number, default: 0 },
+    badges: [{ type: String }],
+
     googleId: {
       type: String,
       default: null,
@@ -112,7 +116,7 @@ const studentSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Hash password before saving

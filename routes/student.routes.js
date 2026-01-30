@@ -85,5 +85,5 @@ studentRouter.get(
   currentQuestQuestionHandle,
 );
 
-
+studentRouter.post("/quest/answer/submit", auth, checkSubscription, submitQuestAnswerHandle);
 export default studentRouter;

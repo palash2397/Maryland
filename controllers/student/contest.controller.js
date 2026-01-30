@@ -1,6 +1,5 @@
 import Joi from "joi";
 
-
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { Msg } from "../../utils/responseMsg.js";
 
@@ -15,11 +14,8 @@ import StudentQuest from "../../models/studentQuest/studentQuest.js";
 // } from "../../utils/helper.js";
 import Teacher from "../../models/teacher/teacher.js";
 
-
 import { getSignedFileUrl } from "../../utils/s3SignedUrl.js";
 import Student from "../../models/student/student.js";
-
-
 
 export const startQuestHandle = async (req, res) => {
   try {
@@ -49,15 +45,28 @@ export const startQuestHandle = async (req, res) => {
     });
 
     if (studentQuest) {
-      return res.status(200).json(
-        new ApiResponse(
-          200,
-          studentQuest,
-          studentQuest.status === "completed"
-            ? Msg.QUEST_ALREADY_COMPLETED
-            : Msg.QUEST_RESUME,
-        ),
-      );
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            studentQuest,
+            studentQuest.status === "completed"
+              ? Msg.QUEST_ALREADY_COMPLETED
+              : Msg.QUEST_RESUME,
+          ),
+        );
+    }
+
+    const attemptsCount = await StudentQuest.countDocuments({
+      studentId: req.user.id,
+      questId,
+    });
+
+    if (attemptsCount >= quest.maxAttempts) {
+      return res
+        .status(403)
+        .json(new ApiResponse(403, {}, Msg.QUEST_MAX_ATTEMPTS_REACHED));
     }
 
     // 4. Create new StudentQuest
@@ -70,22 +79,21 @@ export const startQuestHandle = async (req, res) => {
       startedAt: new Date(),
     });
 
-    return res.status(201).json(
-      new ApiResponse(201, studentQuest, Msg.QUEST_STARTED),
-    );
+    return res
+      .status(201)
+      .json(new ApiResponse(201, studentQuest, Msg.QUEST_STARTED));
   } catch (error) {
     console.error("Start quest error:", error);
-    return res
-      .status(500)
-      .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
 
-
 export const allQuestHandle = async (req, res) => {
   try {
-    const quests = await Quest.find({ isPublished: true })
-      .populate("teacherId", "firstName lastName");
+    const quests = await Quest.find({ isPublished: true }).populate(
+      "teacherId",
+      "firstName lastName",
+    );
 
     if (!quests.length) {
       return res
@@ -142,7 +150,6 @@ export const allQuestHandle = async (req, res) => {
   }
 };
 
-
 export const currentQuestQuestionHandle = async (req, res) => {
   try {
     const { questId } = req.params;
@@ -155,13 +162,9 @@ export const currentQuestQuestionHandle = async (req, res) => {
     });
 
     if (!studentQuest) {
-      return res.status(404).json(
-        new ApiResponse(
-          404,
-          {},
-          Msg.QUEST_QUESTION_NOT_STARTED
-        )
-      );
+      return res
+        .status(404)
+        .json(new ApiResponse(404, {}, Msg.QUEST_QUESTION_NOT_STARTED));
     }
 
     // 2️⃣ Fetch quiz
@@ -176,13 +179,9 @@ export const currentQuestQuestionHandle = async (req, res) => {
 
     // 3️⃣ Safety check
     if (index >= quiz.questions.length) {
-      return res.status(400).json(
-        new ApiResponse(
-          400,
-          {},
-          Msg.QUEST_NO_MORE_QUESTIONS
-        )
-      );
+      return res
+        .status(400)
+        .json(new ApiResponse(400, {}, Msg.QUEST_NO_MORE_QUESTIONS));
     }
 
     const question = quiz.questions[index];
@@ -200,26 +199,20 @@ export const currentQuestQuestionHandle = async (req, res) => {
           question: safeQuestion,
           currentIndex: index + 1,
           totalQuestions: quiz.questions.length,
-          progress: Math.round(
-            ((index) / quiz.questions.length) * 100
-          ),
+          progress: Math.round((index / quiz.questions.length) * 100),
         },
-        Msg.QUEST_QUESTION_FETCHED
-      )
+        Msg.QUEST_QUESTION_FETCHED,
+      ),
     );
   } catch (error) {
     console.error("Get quest question error:", error);
-    return res
-      .status(500)
-      .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
 
-
 export const submitQuestAnswerHandle = async (req, res) => {
   try {
-    
-    const {questId, selectedOption } = req.body;
+    const { questId, selectedOption } = req.body;
     const schema = Joi.object({
       questId: Joi.string().required(),
       selectedOption: Joi.string().required(),
@@ -227,9 +220,10 @@ export const submitQuestAnswerHandle = async (req, res) => {
 
     const { error, value } = schema.validate({ questId, selectedOption });
     if (error) {
-      return res.status(400).json(new ApiResponse(400, {}, error.details[0].message));
+      return res
+        .status(400)
+        .json(new ApiResponse(400, {}, error.details[0].message));
     }
-
 
     // 1️⃣ Fetch student quest
     const studentQuest = await StudentQuest.findOne({
@@ -241,9 +235,7 @@ export const submitQuestAnswerHandle = async (req, res) => {
     if (!studentQuest) {
       return res
         .status(404)
-        .json(
-          new ApiResponse(404, {}, Msg.QUEST_QUESTION_NOT_STARTED)
-        );
+        .json(new ApiResponse(404, {}, Msg.QUEST_QUESTION_NOT_STARTED));
     }
 
     // 2️⃣ Fetch quiz
@@ -280,7 +272,7 @@ export const submitQuestAnswerHandle = async (req, res) => {
     if (isCompleted) {
       // Calculate score (%)
       const score = Math.round(
-        (studentQuest.correctAnswers / quiz.questions.length) * 100
+        (studentQuest.correctAnswers / quiz.questions.length) * 100,
       );
 
       studentQuest.score = score;
@@ -298,8 +290,8 @@ export const submitQuestAnswerHandle = async (req, res) => {
             correctAnswers: studentQuest.correctAnswers,
             totalQuestions: quiz.questions.length,
           },
-          "Quest completed"
-        )
+          "Quest completed",
+        ),
       );
     }
 
@@ -314,13 +306,11 @@ export const submitQuestAnswerHandle = async (req, res) => {
           nextQuestionIndex: studentQuest.currentQuestionIndex,
           correct: isCorrect,
         },
-        "Answer submitted"
-      )
+        "Answer submitted",
+      ),
     );
   } catch (error) {
     console.error("Submit quest answer error:", error);
-    return res
-      .status(500)
-      .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
