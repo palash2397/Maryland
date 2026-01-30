@@ -24,6 +24,7 @@ import {
   startQuestHandle,
   allQuestHandle,
   currentQuestQuestionHandle,
+  submitQuestAnswerHandle,
 } from "../controllers/student/contest.controller.js";
 
 import { cancelSubscriptionHandle } from "../controllers/student/subscription.controller.js";
@@ -83,5 +84,6 @@ studentRouter.get(
   checkSubscription,
   currentQuestQuestionHandle,
 );
+
 
 export default studentRouter;

@@ -216,3 +216,111 @@ export const currentQuestQuestionHandle = async (req, res) => {
 };
 
 
+export const submitQuestAnswerHandle = async (req, res) => {
+  try {
+    
+    const {questId, selectedOption } = req.body;
+    const schema = Joi.object({
+      questId: Joi.string().required(),
+      selectedOption: Joi.string().required(),
+    });
+
+    const { error, value } = schema.validate({ questId, selectedOption });
+    if (error) {
+      return res.status(400).json(new ApiResponse(400, {}, error.details[0].message));
+    }
+
+
+    // 1️⃣ Fetch student quest
+    const studentQuest = await StudentQuest.findOne({
+      studentId: req.user.id,
+      questId,
+      status: "inProgress",
+    });
+
+    if (!studentQuest) {
+      return res
+        .status(404)
+        .json(
+          new ApiResponse(404, {}, Msg.QUEST_QUESTION_NOT_STARTED)
+        );
+    }
+
+    // 2️⃣ Fetch quiz
+    const quiz = await Quiz.findById(studentQuest.quizId).lean();
+    if (!quiz) {
+      return res
+        .status(404)
+        .json(new ApiResponse(404, {}, Msg.QUIZZ_NOT_FOUND));
+    }
+
+    const index = studentQuest.currentQuestionIndex;
+    const question = quiz.questions[index];
+
+    if (!question) {
+      return res
+        .status(400)
+        .json(new ApiResponse(400, {}, Msg.QUEST_QUESTION_NOT_F));
+    }
+
+    // 3️⃣ Check answer
+    const isCorrect = question.correctAnswer === selectedOption;
+
+    if (isCorrect) {
+      studentQuest.correctAnswers += 1;
+    }
+
+    // 4️⃣ Move to next question
+    studentQuest.currentQuestionIndex += 1;
+
+    // 5️⃣ Check completion
+    const isCompleted =
+      studentQuest.currentQuestionIndex >= quiz.questions.length;
+
+    if (isCompleted) {
+      // Calculate score (%)
+      const score = Math.round(
+        (studentQuest.correctAnswers / quiz.questions.length) * 100
+      );
+
+      studentQuest.score = score;
+      studentQuest.status = "completed";
+      studentQuest.completedAt = new Date();
+
+      await studentQuest.save();
+
+      return res.status(200).json(
+        new ApiResponse(
+          200,
+          {
+            completed: true,
+            score,
+            correctAnswers: studentQuest.correctAnswers,
+            totalQuestions: quiz.questions.length,
+          },
+          "Quest completed"
+        )
+      );
+    }
+
+    // 6️⃣ Save progress
+    await studentQuest.save();
+
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          completed: false,
+          nextQuestionIndex: studentQuest.currentQuestionIndex,
+          correct: isCorrect,
+        },
+        "Answer submitted"
+      )
+    );
+  } catch (error) {
+    console.error("Submit quest answer error:", error);
+    return res
+      .status(500)
+      .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+};
