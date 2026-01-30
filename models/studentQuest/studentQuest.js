@@ -22,8 +22,8 @@ const studentQuestSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["not_started", "in_progress", "completed", "failed"],
-      default: "not_started",
+      enum: ["notStarted", "inProgress", "completed", "failed"],
+      default: "notStarted",
     },
 
     currentQuestionIndex: {
