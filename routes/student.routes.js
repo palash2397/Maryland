@@ -19,6 +19,8 @@ import {
   playChapterHandle
 } from "../controllers/student/student.controller.js";
 
+import { quizzByQuestIdHandle } from "../controllers/teacher/lesson.controller.js";
+
 import { cancelSubscriptionHandle } from "../controllers/student/subscription.controller.js";
 
 import { createSubscriptionCheckout } from "../controllers/admin/plan.controller.js";
@@ -52,5 +54,7 @@ studentRouter.put("/teacher-review/:id", auth, updateTeacherReviewHandle);
 studentRouter.get("/subscription", auth, mySubscriptionHandle);
 studentRouter.post("/subscription/checkout/:id", auth, createSubscriptionCheckout);
 studentRouter.put("/subscription/cancel", auth, cancelSubscriptionHandle);
+
+studentRouter.get("/quest/:id", auth, quizzByQuestIdHandle);
 
 export default studentRouter;
