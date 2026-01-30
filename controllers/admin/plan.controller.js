@@ -15,11 +15,9 @@ const createStripePriceForPlan = async (plan) => {
 
   // 2. Create price
   const price = await stripe.prices.create({
-    unit_amount: plan.price * 100, // INR → paise
-    currency: plan.currency.toLowerCase(),
-    recurring: {
-      interval: plan.interval, 
-    },
+    unit_amount: Math.round(plan.price * 100), // USD -> cents
+    currency: "usd",
+    recurring: { interval: plan.interval },
     product: product.id,
   });
 
@@ -70,6 +68,8 @@ export const createPlanHandle = async (req, res) => {
       plan.stripePriceId = stripePriceId;
       await plan.save();
     }
+
+    console.log("Plan created:", plan);
 
     return res.status(201).json(new ApiResponse(201, plan, Msg.DATA_ADDED));
   } catch (error) {
@@ -177,16 +177,13 @@ export const createSubscriptionCheckout = async (req, res) => {
 
     const plan = await Plan.findOne({ _id: id, isActive: true });
     if (!plan || !plan.stripePriceId) {
-      return res
-        .status(400)
-        .json(new ApiResponse(400, {}, Msg.PLAN_NOT_FOUND));
+      return res.status(400).json(new ApiResponse(400, {}, Msg.PLAN_NOT_FOUND));
     }
 
     let subscription = await UserSubscription.findOne({
       userId: req.user.id,
     });
 
-    
     let customerId = subscription?.stripeCustomerId;
     console.log("customerId", customerId);
     if (!customerId) {
@@ -196,7 +193,6 @@ export const createSubscriptionCheckout = async (req, res) => {
       customerId = customer.id;
     }
 
-   
     const stripeSubscription = await stripe.subscriptions.create({
       customer: customerId,
       items: [{ price: plan.stripePriceId }],
@@ -204,8 +200,7 @@ export const createSubscriptionCheckout = async (req, res) => {
       expand: ["latest_invoice.payment_intent"],
     });
 
-    const paymentIntent =
-      stripeSubscription.latest_invoice.payment_intent;
+    const paymentIntent = stripeSubscription.latest_invoice.payment_intent;
 
     await UserSubscription.updateOne(
       { userId: req.user.id },
@@ -213,7 +208,7 @@ export const createSubscriptionCheckout = async (req, res) => {
         stripeCustomerId: customerId,
         stripeSubscriptionId: stripeSubscription.id,
       },
-      { upsert: true }
+      { upsert: true },
     );
 
     return res.status(200).json(
@@ -224,13 +219,11 @@ export const createSubscriptionCheckout = async (req, res) => {
           paymentId: paymentIntent.id, // ✅ added
           subscriptionId: stripeSubscription.id, // optional but useful
         },
-        Msg.SUBSCRIPTION_CREATED
-      )
+        Msg.SUBSCRIPTION_CREATED,
+      ),
     );
   } catch (error) {
     console.error("Subscription checkout error:", error);
-    return res
-      .status(500)
-      .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
