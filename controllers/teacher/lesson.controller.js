@@ -734,8 +734,8 @@ export const getQuestsHandle = async (req, res) => {
 
     const questsWithSignedUrls = await Promise.all(
       quests.map(async (quest) => {
-        if (quest.thumbnail?.key) {
-          quest.thumbnail.key = await getSignedFileUrl(quest.thumbnail.key);
+        if (quest.thumbnail) {
+          quest.thumbnail = await getSignedFileUrl(quest.thumbnail);
         }
         return quest;
       }),
@@ -758,7 +758,7 @@ export const questByIdHandle = async (req, res) => {
       return res.status(404).json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND));
     }
 
-    quest.thumbnail.key = await getSignedFileUrl(quest.thumbnail?.key);
+    quest.thumbnail = await getSignedFileUrl(quest.thumbnail);
     return res.status(200).json(new ApiResponse(200, quest, Msg.DATA_FETCHED));
   } catch (error) {
     console.error("Error getting quest:", error);

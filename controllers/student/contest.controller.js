@@ -44,7 +44,6 @@ export const startQuestHandle = async (req, res) => {
       questId,
     });
 
-
     console.log("studentQuest", studentQuest);
 
     if (studentQuest) {
@@ -81,6 +80,16 @@ export const startQuestHandle = async (req, res) => {
       status: "inProgress",
       startedAt: new Date(),
     });
+
+    await Student.updateOne(
+      { _id: req.user.id },
+      {
+        $inc: {
+          xp: quest.rewardPoints,
+          coins: quest.rewardCoins || 0,
+        },
+      },
+    );
 
     return res
       .status(201)

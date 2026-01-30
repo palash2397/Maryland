@@ -32,7 +32,10 @@ import { cancelSubscriptionHandle } from "../controllers/student/subscription.co
 import { createSubscriptionCheckout } from "../controllers/admin/plan.controller.js";
 import { auth } from "../middlewares/auth.js";
 import { checkSubscription } from "../middlewares/subscription.js";
-import { leaderboardHandle } from "../controllers/student/leaderBoard.controller.js";
+import {
+  leaderboardHandle,
+  leaderboardSummaryHandle,
+} from "../controllers/student/leaderBoard.controller.js";
 
 import { uploadProfileImage } from "../middlewares/s3upload.js";
 
@@ -94,5 +97,6 @@ studentRouter.post(
   submitQuestAnswerHandle,
 );
 
-studentRouter.get("/quizz/leaderboard", auth, leaderboardHandle);
+studentRouter.get("/quizz/leaderboard", auth, checkSubscription, leaderboardHandle);
+studentRouter.get("/quizz/leaderboard/summary", auth, checkSubscription, leaderboardSummaryHandle);
 export default studentRouter;
