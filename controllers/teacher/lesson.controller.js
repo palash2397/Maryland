@@ -884,3 +884,17 @@ export const quizzByQuestIdHandle = async(req, res)=>{
     
   }
 }
+
+
+export const allQuestHandle = async(req, res)=>{
+  try {
+    const quests = await Quest.find();
+    if (!quests || quests.length === 0) {
+      return res.status(404).json(new ApiResponse(404, {}, Msg.QUEST_NOT_FOUND));
+    }
+    return res.status(200).json(new ApiResponse(200, quests, Msg.QUEST_FETCHED));
+  } catch (error) {
+    console.log(`Error getting all quests: ${error}`)
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+}
