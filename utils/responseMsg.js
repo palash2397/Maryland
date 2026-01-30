@@ -149,6 +149,8 @@ export const Msg = {
   QUEST_QUESTION_ADDED: `Quest question added successfully`,
   QUEST_QUESTION_NOT_STARTED: `Quest not started or already completed`,
   QUEST_NO_MORE_QUESTIONS: `No more questions available`,
+  QUEST_ALREADY_COMPLETED: `Quest already completed`,
+  QUEST_RESUME: `Resume quest`,
 
   // Qust Question Answer
   ANSWER_SUBMITTED: `Answer submitted successfully`,

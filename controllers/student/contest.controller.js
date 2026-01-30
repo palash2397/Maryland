@@ -44,6 +44,9 @@ export const startQuestHandle = async (req, res) => {
       questId,
     });
 
+
+    console.log("studentQuest", studentQuest);
+
     if (studentQuest) {
       return res
         .status(200)
@@ -281,6 +284,31 @@ export const submitQuestAnswerHandle = async (req, res) => {
 
       await studentQuest.save();
 
+      const quest = await Quest.findById(questId).lean();
+
+      if (quest?.rewards) {
+        const update = {};
+
+        if (quest.rewards.xpPoints > 0) {
+          update.$inc = { xp: quest.rewards.xpPoints };
+        }
+
+        if (quest.rewards.coins > 0) {
+          update.$inc = {
+            ...(update.$inc || {}),
+            coins: quest.rewards.coins,
+          };
+        }
+
+        if (quest.rewards.badge) {
+          update.$addToSet = { badges: quest.rewards.badge };
+        }
+
+        if (Object.keys(update).length > 0) {
+          await Student.updateOne({ _id: req.user.id }, update);
+        }
+      }
+
       return res.status(200).json(
         new ApiResponse(
           200,
@@ -290,7 +318,7 @@ export const submitQuestAnswerHandle = async (req, res) => {
             correctAnswers: studentQuest.correctAnswers,
             totalQuestions: quiz.questions.length,
           },
-          "Quest completed",
+          Msg.QUEST_COMPLETED,
         ),
       );
     }
