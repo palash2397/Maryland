@@ -138,5 +138,15 @@ export const Msg = {
   QUIZZ_FETCHED: `Quizz fetched successfully`,
 
 
+  // Quest Question
+  QUEST_QUESTION_FETCHED: `Quest question fetched successfully`,
+  QUEST_QUESTION_NOT_FOUND: `Quest question not found`,
+  QUEST_QUESTION_ERROR: `Error fetching quest question`,
+  QUEST_QUESTION_LIMIT_EXCEEDED: `Quest question limit exceeded`,
+  QUEST_QUESTION_REQUIRED: `Quest question required`,
+  QUEST_QUESTION_DELETED: `Quest question deleted successfully`,
+  QUEST_QUESTION_UPDATED: `Quest question updated successfully`,
+  QUEST_QUESTION_ADDED: `Quest question added successfully`,
+
 
 };

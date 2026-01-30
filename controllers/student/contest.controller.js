@@ -141,3 +141,77 @@ export const allQuestHandle = async (req, res) => {
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
+
+
+
+export const getCurrentQuestQuestionHandle = async (req, res) => {
+  try {
+    const { questId } = req.params;
+
+    // 1️⃣ Find student quest progress
+    const studentQuest = await StudentQuest.findOne({
+      studentId: req.user.id,
+      questId,
+      status: "in_progress",
+    });
+
+    if (!studentQuest) {
+      return res.status(404).json(
+        new ApiResponse(
+          404,
+          {},
+          "Quest not started or already completed"
+        )
+      );
+    }
+
+    // 2️⃣ Fetch quiz
+    const quiz = await Quiz.findById(studentQuest.quizId).lean();
+    if (!quiz) {
+      return res
+        .status(404)
+        .json(new ApiResponse(404, {}, Msg.QUIZ_NOT_FOUND));
+    }
+
+    const index = studentQuest.currentQuestionIndex;
+
+    // 3️⃣ Safety check
+    if (index >= quiz.questions.length) {
+      return res.status(400).json(
+        new ApiResponse(
+          400,
+          {},
+          "No more questions remaining"
+        )
+      );
+    }
+
+    const question = quiz.questions[index];
+
+    // 4️⃣ Remove correct answer before sending
+    const { correctAnswer, ...safeQuestion } = question.toObject
+      ? question.toObject()
+      : question;
+
+    // 5️⃣ Send response
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          question: safeQuestion,
+          currentIndex: index + 1,
+          totalQuestions: quiz.questions.length,
+          progress: Math.round(
+            ((index) / quiz.questions.length) * 100
+          ),
+        },
+        Msg.QUEST_QUESTION_FETCHED
+      )
+    );
+  } catch (error) {
+    console.error("Get quest question error:", error);
+    return res
+      .status(500)
+      .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+};
