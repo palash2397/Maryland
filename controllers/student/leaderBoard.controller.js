@@ -8,34 +8,27 @@ import Student from "../../models/student/student.js";
 
 export const leaderboardHandle = async (req, res) => {
   try {
-    const limit = Number(req.query.limit) || 20;
-
-    const leaderboard = await Student.find({ isActive: true })
-      .select("firstName lastName xp coins")
-      .sort({ xp: -1, coins: -1 })
-      .limit(limit)
+    const students = await Student.find({ isActive: true })
+      .select("firstName lastName avatar xp level")
+      .sort({ xp: -1 })
+      .limit(50)
       .lean();
 
-    // Add rank manually
-    const rankedList = leaderboard.map((student, index) => ({
+    const leaderboard = students.map((s, index) => ({
       rank: index + 1,
-      studentId: student._id,
-      name: `${student.firstName} ${student.lastName}`,
-      xp: student.xp || 0,
-      coins: student.coins || 0,
+      name: `${s.firstName}`,
+      avatar: s.avatar,
+      points: s.xp,
+      level: s.level,
+      progress: Math.min((s.xp % 100), 100),
     }));
 
     return res.status(200).json(
-      new ApiResponse(
-        200,
-        rankedList,
-        Msg.
-      )
+      new ApiResponse(200, leaderboard, "Leaderboard fetched")
     );
   } catch (error) {
-    console.error("Leaderboard error:", error);
-    return res
-      .status(500)
-      .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+    return res.status(500).json(
+      new ApiResponse(500, {}, Msg.SERVER_ERROR)
+    );
   }
 };

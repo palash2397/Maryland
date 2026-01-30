@@ -32,6 +32,7 @@ import { cancelSubscriptionHandle } from "../controllers/student/subscription.co
 import { createSubscriptionCheckout } from "../controllers/admin/plan.controller.js";
 import { auth } from "../middlewares/auth.js";
 import { checkSubscription } from "../middlewares/subscription.js";
+import { leaderboardHandle } from "../controllers/student/leaderBoard.controller.js";
 
 import { uploadProfileImage } from "../middlewares/s3upload.js";
 
@@ -72,6 +73,7 @@ studentRouter.put("/subscription/cancel", auth, cancelSubscriptionHandle);
 
 studentRouter.get("/quest/:id", auth, checkSubscription, quizzByQuestIdHandle);
 studentRouter.get("/quests", auth, checkSubscription, allQuestHandle);
+
 studentRouter.post(
   "/quest/start/:questId",
   auth,
@@ -85,5 +87,12 @@ studentRouter.get(
   currentQuestQuestionHandle,
 );
 
-studentRouter.post("/quest/answer/submit", auth, checkSubscription, submitQuestAnswerHandle);
+studentRouter.post(
+  "/quest/answer/submit",
+  auth,
+  checkSubscription,
+  submitQuestAnswerHandle,
+);
+
+studentRouter.get("/quizz/leaderboard", auth, leaderboardHandle);
 export default studentRouter;

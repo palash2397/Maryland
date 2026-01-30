@@ -61,6 +61,7 @@ const studentSchema = new mongoose.Schema(
     },
 
     xp: { type: Number, default: 0 },
+    level: { type: Number, default: 1 },
     coins: { type: Number, default: 0 },
     badges: [{ type: String }],
 
