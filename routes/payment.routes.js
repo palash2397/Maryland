@@ -17,7 +17,7 @@ paymentRouter.post(
   confirmPaymentIntent
 );
 
-paymentRouter.get("/billing-history", auth, userBillingHistoryHandle);
+// paymentRouter.get("/billing/history", auth, userBillingHistoryHandle);
 
 
 export default paymentRouter;

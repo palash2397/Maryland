@@ -19,13 +19,15 @@ import {
   playChapterHandle,
 } from "../controllers/student/student.controller.js";
 
+import { userBillingHistoryHandle } from "../controllers/student/payment.controller.js";
+
 import { quizzByQuestIdHandle } from "../controllers/teacher/lesson.controller.js";
 import {
   startQuestHandle,
   allQuestHandle,
   currentQuestQuestionHandle,
   submitQuestAnswerHandle,
-  myBadgesHandle
+  myBadgesHandle,
 } from "../controllers/student/contest.controller.js";
 
 import { cancelSubscriptionHandle } from "../controllers/student/subscription.controller.js";
@@ -42,6 +44,8 @@ import { uploadProfileImage } from "../middlewares/s3upload.js";
 
 const studentRouter = Router();
 
+
+// Authentication routes
 studentRouter.post("/register", registerHandle);
 studentRouter.get("/verify-account/:token", verifyAccountHandle);
 studentRouter.post("/login", loginHandle);
@@ -57,16 +61,18 @@ studentRouter.put(
 studentRouter.get("/profile", auth, profileHandle);
 studentRouter.put("/change-password", auth, changePasswordHandle);
 
+// Lesson routes
 studentRouter.get("/lessons", auth, allLessonsHandle);
 studentRouter.get("/lesson/:id", auth, lessonByIdHandle);
-
 studentRouter.get("/lesson/chapters/:lessonId", auth, lessonChaptersHandle);
 studentRouter.get("/lesson/chapter/play/:chapterId", auth, playChapterHandle);
 
+// Teacher review routes
 studentRouter.post("/teacher-review", auth, addTeacherReviewHandle);
 studentRouter.get("/teacher-review/:id", auth, myTeacherReviewsHandle);
 studentRouter.put("/teacher-review/:id", auth, updateTeacherReviewHandle);
 
+// Subscription routes
 studentRouter.get("/subscription", auth, mySubscriptionHandle);
 studentRouter.post(
   "/subscription/checkout/:id",
@@ -75,6 +81,7 @@ studentRouter.post(
 );
 studentRouter.put("/subscription/cancel", auth, cancelSubscriptionHandle);
 
+// Quest routes
 studentRouter.get("/quest/:id", auth, checkSubscription, quizzByQuestIdHandle);
 studentRouter.get("/quests", auth, checkSubscription, allQuestHandle);
 
@@ -98,8 +105,26 @@ studentRouter.post(
   submitQuestAnswerHandle,
 );
 
-studentRouter.get("/quizz/leaderboard", auth, checkSubscription, leaderboardHandle);
-studentRouter.get("/quizz/leaderboard/summary", auth, checkSubscription, leaderboardSummaryHandle);
+
+// Leaderboard routes
+studentRouter.get(
+  "/quizz/leaderboard",
+  auth,
+  checkSubscription,
+  leaderboardHandle,
+);
+
+studentRouter.get(
+  "/quizz/leaderboard/summary",
+  auth,
+  checkSubscription,
+  leaderboardSummaryHandle,
+);
+
+// Badges routes
 studentRouter.get("/badges", auth, checkSubscription, myBadgesHandle);
+
+// Billing routes
+studentRouter.get("/billing/history", auth, userBillingHistoryHandle);
 
 export default studentRouter;
