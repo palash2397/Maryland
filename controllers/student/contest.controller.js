@@ -10,7 +10,6 @@ import Quiz from "../../models/quizz/quizz.js";
 import Quest from "../../models/quest/quest.js";
 import StudentQuest from "../../models/studentQuest/studentQuest.js";
 
-
 import Teacher from "../../models/teacher/teacher.js";
 
 import { getSignedFileUrl } from "../../utils/s3SignedUrl.js";
@@ -79,8 +78,6 @@ export const startQuestHandle = async (req, res) => {
       status: "inProgress",
       startedAt: new Date(),
     });
-
-   
 
     await Student.updateOne(
       { _id: req.user.id },
@@ -287,7 +284,7 @@ export const submitQuestAnswerHandle = async (req, res) => {
     // ===========================
     if (isCompleted) {
       const score = Math.round(
-        (studentQuest.correctAnswers / quiz.questions.length) * 100
+        (studentQuest.correctAnswers / quiz.questions.length) * 100,
       );
 
       studentQuest.score = score;
@@ -321,7 +318,7 @@ export const submitQuestAnswerHandle = async (req, res) => {
           $inc: {
             coins: earnedCoins,
           },
-        }
+        },
       );
 
       // ===========================
@@ -334,6 +331,7 @@ export const submitQuestAnswerHandle = async (req, res) => {
         status: "completed",
       });
 
+      const oldLevel = student.level || 1;
       const badges = await Badge.find({ isActive: true });
 
       for (const badge of badges) {
@@ -356,7 +354,7 @@ export const submitQuestAnswerHandle = async (req, res) => {
             {
               $setOnInsert: { unlockedAt: new Date() },
             },
-            { upsert: true }
+            { upsert: true },
           );
         }
       }
@@ -367,15 +365,17 @@ export const submitQuestAnswerHandle = async (req, res) => {
           200,
           {
             completed: true,
+            questId,
             score,
-            correctAnswers: studentQuest.correctAnswers,
-            totalQuestions: quiz.questions.length,
             earnedXp,
             earnedCoins,
+            oldLevel,
             newLevel,
+            leveledUp: newLevel > oldLevel,
+            newBadges: newlyUnlockedBadges,
           },
-          Msg.QUEST_COMPLETED
-        )
+          Msg.QUEST_COMPLETED,
+        ),
       );
     }
 
@@ -392,8 +392,8 @@ export const submitQuestAnswerHandle = async (req, res) => {
           nextQuestionIndex: studentQuest.currentQuestionIndex,
           correct: isCorrect,
         },
-        "Answer submitted"
-      )
+        Msg.ANSWER_SUBMITTED,
+      ),
     );
   } catch (error) {
     console.error("Submit quest answer error:", error);
@@ -401,15 +401,11 @@ export const submitQuestAnswerHandle = async (req, res) => {
   }
 };
 
-
-
 export const myBadgesHandle = async (req, res) => {
   try {
     const badges = await StudentBadge.find({
       studentId: req.user.id,
-    }).populate("badgeId", "key title description icon")
-      
-
+    }).populate("badgeId", "key title description icon");
 
     console.log("badges", badges);
 
@@ -422,16 +418,14 @@ export const myBadgesHandle = async (req, res) => {
           ? await getSignedFileUrl(item.badgeId.icon)
           : null,
         unlockedAt: item.unlockedAt,
-      }))
+      })),
     );
 
-    return res.status(200).json(
-      new ApiResponse(200, response, Msg.DATA_FETCHED)
-    );
+    return res
+      .status(200)
+      .json(new ApiResponse(200, response, Msg.DATA_FETCHED));
   } catch (error) {
     console.error("Error fetching badges:", error);
-    return res
-      .status(500)
-      .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
