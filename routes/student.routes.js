@@ -25,6 +25,7 @@ import {
   allQuestHandle,
   currentQuestQuestionHandle,
   submitQuestAnswerHandle,
+  myBadgesHandle
 } from "../controllers/student/contest.controller.js";
 
 import { cancelSubscriptionHandle } from "../controllers/student/subscription.controller.js";
@@ -99,4 +100,6 @@ studentRouter.post(
 
 studentRouter.get("/quizz/leaderboard", auth, checkSubscription, leaderboardHandle);
 studentRouter.get("/quizz/leaderboard/summary", auth, checkSubscription, leaderboardSummaryHandle);
+studentRouter.get("/badges", auth, checkSubscription, myBadgesHandle);
+
 export default studentRouter;

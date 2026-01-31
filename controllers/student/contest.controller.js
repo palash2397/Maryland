@@ -403,13 +403,15 @@ export const submitQuestAnswerHandle = async (req, res) => {
 
 
 
-export const getMyBadgesHandle = async (req, res) => {
+export const myBadgesHandle = async (req, res) => {
   try {
     const badges = await StudentBadge.find({
       studentId: req.user.id,
-    })
-      .populate("badgeId", "title description icon")
-      .lean();
+    }).populate("badgeId", "key title description icon")
+      
+
+
+    console.log("badges", badges);
 
     const response = await Promise.all(
       badges.map(async (item) => ({
