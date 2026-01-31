@@ -13,6 +13,10 @@ import {
 import Teacher from "../../models/teacher/teacher.js";
 import Video from "../../models/lesson/video.js";
 
+import StudentBadge from "../../models/badges/studentBadges.js";
+
+import StudentQuest from "../../models/studentQuest/studentQuest.js";
+
 import { getSignedFileUrl } from "../../utils/s3SignedUrl.js";
 import {
   sendVerificationMail,
@@ -373,23 +377,102 @@ export const updateProfileHandle = async (req, res) => {
 };
 
 export const profileHandle = async (req, res) => {
-  try {
-    const user = await Student.findById(req.user.id).select(
-      "-password -googleId -provider -createdAt -updatedAt -__v -actToken -linkExpireAt -passwordResetToken",
-    );
+ try {
+    const LEVEL_XP = 100;
 
-    console.log(`user --------->`, user);
-    if (!user) {
-      return res.status(404).json(new ApiResponse(404, {}, Msg.USER_NOT_FOUND));
+    // 1️⃣ Student basic info
+    const student = await Student.findById(req.user.id)
+      .select("firstName lastName avatar xp level")
+      .lean();
+
+    if (!student) {
+      return res
+        .status(404)
+        .json(new ApiResponse(404, {}, Msg.USER_NOT_FOUND));
     }
 
-    user.avatar = user.avatar ? await getSignedFileUrl(user.avatar) : null;
+    const xp = student.xp ?? 0;
+    const level = student.level ?? 1;
 
-    console.log(`user jprofile success --------->`);
-    res.status(200).json(new ApiResponse(200, user, Msg.DATA_FETCHED));
+    // 2️⃣ Progress calculation
+    const levelBaseXp = (level - 1) * LEVEL_XP;
+    const progress = Math.min(
+      Math.floor(((xp - levelBaseXp) / LEVEL_XP) * 100),
+      100
+    );
+
+    // 3️⃣ Completed quests count
+    const completedQuests = await StudentQuest.countDocuments({
+      studentId: req.user.id,
+      status: "completed",
+    });
+
+    // 4️⃣ Badges
+    const badges = await StudentBadge.find({
+      studentId: req.user.id,
+    })
+      .populate("badgeId", "title icon")
+      .lean();
+
+    const badgeList = await Promise.all(
+      badges.map(async (b) => ({
+        title: b.badgeId.title,
+        icon: b.badgeId.icon
+          ? await getSignedFileUrl(b.badgeId.icon)
+          : null,
+        unlockedAt: b.unlockedAt,
+      }))
+    );
+
+    // 5️⃣ Subscription
+    const subscription = await UserSubscription.findOne({
+      userId: req.user.id,
+      status: "active",
+    }).lean();
+
+    // 6️⃣ Leaderboard rank
+    const rank =
+      (await Student.countDocuments({ xp: { $gt: xp } })) + 1;
+
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          profile: {
+            name: `${student.firstName} ${student.lastName || ""}`,
+            avatar: student.avatar
+              ? await getSignedFileUrl(student.avatar)
+              : process.env.DEFAULT_PROFILE_PIC,
+          },
+          progress: {
+            xp,
+            level,
+            progress,
+          },
+          stats: {
+            completedQuests,
+            badgesUnlocked: badgeList.length,
+            rank,
+          },
+          badges: badgeList,
+          subscription: subscription
+            ? {
+                plan: subscription.plan,
+                validTill: subscription.endDate,
+              }
+            : {
+                plan: "free",
+                validTill: null,
+              },
+        },
+        Msg.USER_FETCHED
+      )
+    );
   } catch (error) {
-    console.error("Error fetching profile:", error);
-    res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+    console.error("Student profile error:", error);
+    return res
+      .status(500)
+      .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
 

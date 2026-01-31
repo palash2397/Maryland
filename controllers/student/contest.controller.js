@@ -334,6 +334,8 @@ export const submitQuestAnswerHandle = async (req, res) => {
       const oldLevel = student.level || 1;
       const badges = await Badge.find({ isActive: true });
 
+      const newlyUnlockedBadges = [];
+
       for (const badge of badges) {
         let shouldUnlock = false;
 
@@ -346,7 +348,7 @@ export const submitQuestAnswerHandle = async (req, res) => {
         }
 
         if (shouldUnlock) {
-          await StudentBadge.updateOne(
+          const result = await StudentBadge.updateOne(
             {
               studentId: req.user.id,
               badgeId: badge._id,
@@ -356,6 +358,14 @@ export const submitQuestAnswerHandle = async (req, res) => {
             },
             { upsert: true },
           );
+
+          // 🔥 Newly unlocked badge
+          if (result.upsertedCount > 0) {
+            newlyUnlockedBadges.push({
+              title: badge.title,
+              icon: badge.icon,
+            });
+          }
         }
       }
 
