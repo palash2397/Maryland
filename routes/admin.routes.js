@@ -19,7 +19,10 @@ import {
   teacherAccountStatusHandle,
 } from "../controllers/admin/teacher.controller.js";
 
-import { contestDashboardHandle } from "../controllers/admin/dashboard.controller.js";
+import {
+  contestDashboardHandle,
+  subscriptionAnalyticsHandle,
+} from "../controllers/admin/dashboard.controller.js";
 
 import { auth, isAdmin } from "../middlewares/auth.js";
 
@@ -43,5 +46,14 @@ adminRouter.patch("/teacher/:id", auth, isAdmin, teacherAccountStatusHandle);
 
 // CONTEST DASHBOARD
 adminRouter.get("/contest/dashboard", auth, isAdmin, contestDashboardHandle);
+
+
+// SUBSCRIPTION ANALYTICS
+adminRouter.get(
+  "/subscription/analytics",
+  auth,
+  isAdmin,
+  subscriptionAnalyticsHandle
+);
 
 export default adminRouter;
