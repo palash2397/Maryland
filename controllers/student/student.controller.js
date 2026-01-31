@@ -382,7 +382,7 @@ export const profileHandle = async (req, res) => {
 
     // 1️⃣ Student basic info
     const student = await Student.findById(req.user.id)
-      .select("firstName lastName avatar xp level isVerified isActive")
+      .select("firstName lastName avatar xp level isVerified isActive role")
       .lean();
 
     if (!student) {
