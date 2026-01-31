@@ -15,6 +15,12 @@ const userSubscriptionSchema = new mongoose.Schema(
       default: "free",
     },
 
+    planId:{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Plan",
+      required: true,
+    },
+
     status: {
       type: String,
       enum: ["active", "inactive", "cancelled", "expired"],
@@ -28,6 +34,11 @@ const userSubscriptionSchema = new mongoose.Schema(
 
     endDate: {
       type: Date,
+      default: null,
+    },
+
+    paymentIntenId:{
+      type: String,
       default: null,
     },
 

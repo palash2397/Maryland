@@ -3,6 +3,7 @@ import { ApiResponse } from "../../utils/ApiResponse.js";
 import { Msg } from "../../utils/responseMsg.js";
 import Student from "../../models/student/student.js";
 import UserSubscription from "../../models/subcription/userSubscription.js";
+import BillingHistory from "../../models/billing/billingHistory.js";
 import Joi from "joi";
 
 export const createPaymentIntent = async (req, res) => {
@@ -144,7 +145,10 @@ export const stripeWebhookHandle = async (req, res) => {
   try {
     switch (event.type) {
       case "invoice.payment_succeeded": {
+        console.log("invoice.payment_succeeded", event);
         const invoice = event.data.object;
+
+        console.log("invoice", invoice.payment_settings);
         // console.log("invoice", invoice.parent?.subscription_details.subscription);
         const subscriptionId =
           invoice.parent?.subscription_details.subscription;
@@ -159,17 +163,7 @@ export const stripeWebhookHandle = async (req, res) => {
         const startDate = toDateOrNull(sub.current_period_start);
         const endDate = toDateOrNull(sub.current_period_end);
 
-        // const update = {
-        //   status: "active",
-        //   stripePriceId: price?.id,
-        //   plan: price?.nickname || "pro",
-        //   cancelAtPeriodEnd: !!sub.cancel_at_period_end,
-        // };
-
-        // if (startDate) update.startDate = startDate;
-        // if (endDate) update.endDate = endDate;
-
-        await UserSubscription.findOneAndUpdate(
+        const userSubscription = await UserSubscription.findOneAndUpdate(
           { stripeSubscriptionId: subscriptionId },
           {
             status: "active",
@@ -181,6 +175,19 @@ export const stripeWebhookHandle = async (req, res) => {
           },
           { upsert: true, new: true },
         );
+
+        if (userSubscription) {
+          await BillingHistory.create({
+            userId: userSubscription.userId,
+            subscriptionId: userSubscription._id,
+            planId: userSubscription.planId,
+            stripePaymentIntentId: invoice.payment_intent.id,
+            stripeInvoiceId: invoice.id,
+            amount: invoice.amount_paid,
+            currency: invoice.currency,
+            paidAt: new Date(invoice.created * 1000),
+          });
+        }
 
         break;
       }
@@ -210,10 +217,7 @@ export const stripeWebhookHandle = async (req, res) => {
           sub.billing_cycle_anchor ??
           sub.created;
 
-        const endSeconds =
-          sub.current_period_end ??
-          sub.cancel_at ??
-          null;
+        const endSeconds = sub.current_period_end ?? sub.cancel_at ?? null;
 
         console.log("sub", sub);
         const startDate = toDateOrNull(startSeconds);

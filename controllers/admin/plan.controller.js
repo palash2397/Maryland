@@ -4,6 +4,7 @@ import stripe from "../../utils/stripe/stripe.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { Msg } from "../../utils/responseMsg.js";
 import UserSubscription from "../../models/subcription/userSubscription.js";
+import BillingHistory from "../../models/billing/billingHistory.js";
 import Plan from "../../models/plan/plan.js";
 
 const createStripePriceForPlan = async (plan) => {
@@ -193,7 +194,8 @@ export const createSubscriptionCheckout = async (req, res) => {
       customerId = customer.id;
     }
 
-    const stripeSubscription = await stripe.subscriptions.create({
+    const stripeSubscription = 
+    await stripe.subscriptions.create({
       customer: customerId,
       items: [{ price: plan.stripePriceId }],
       payment_behavior: "default_incomplete",
@@ -207,6 +209,8 @@ export const createSubscriptionCheckout = async (req, res) => {
       {
         stripeCustomerId: customerId,
         stripeSubscriptionId: stripeSubscription.id,
+        planId: id,
+        paymentIntenId: paymentIntent.id,
       },
       { upsert: true },
     );
