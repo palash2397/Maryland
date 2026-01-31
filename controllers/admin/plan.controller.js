@@ -231,3 +231,24 @@ export const createSubscriptionCheckout = async (req, res) => {
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
+
+
+export const adminBillingHistoryHandle = async (req, res) => {
+  try {
+    const history = await BillingHistory.find()
+      .populate("userId", "firstName lastName email")
+      .populate("planId", "name")
+      .sort({ paidAt: -1 })
+      .limit(100)
+      .lean();
+
+    return res.status(200).json(
+      new ApiResponse(200, history, Msg.BILLING_HISTORY_FETCHED)
+    );
+  } catch (error) {
+    return res
+      .status(500)
+      .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+};
+
