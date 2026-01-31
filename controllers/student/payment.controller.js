@@ -163,7 +163,7 @@ export const stripeWebhookHandle = async (req, res) => {
         const startDate = toDateOrNull(sub.current_period_start);
         const endDate = toDateOrNull(sub.current_period_end);
 
-         await UserSubscription.findOneAndUpdate(
+        await UserSubscription.findOneAndUpdate(
           { stripeSubscriptionId: subscriptionId },
           {
             status: "active",
@@ -178,10 +178,13 @@ export const stripeWebhookHandle = async (req, res) => {
 
         // console.log("userSubscription", userSubscription);
 
-        const userSubscription = await UserSubscription.findOne({ stripeSubscriptionId: subscriptionId });
+        const userSubscription = await UserSubscription.findOne({
+          stripeSubscriptionId: subscriptionId,
+        });
         if (!userSubscription) {
-          return res.status(404).json({ message: "User subscription not found" });
-
+          return res
+            .status(404)
+            .json({ message: "User subscription not found" });
         }
 
         console.log("userSubscription", userSubscription);
@@ -274,7 +277,6 @@ export const stripeWebhookHandle = async (req, res) => {
   }
 };
 
-
 export const userBillingHistoryHandle = async (req, res) => {
   try {
     const history = await BillingHistory.find({
@@ -284,18 +286,16 @@ export const userBillingHistoryHandle = async (req, res) => {
       .sort({ paidAt: -1 })
       .lean();
 
-    // if (!history || history.length === 0) {
-    //   return res.status(200).json(
-    //     new ApiResponse(200, [], Msg.)
-    //   );
-    // }
+    if (!history || history.length === 0) {
+      return res
+        .status(404)
+        .json(new ApiResponse(404, {}, Msg.BILLING_HISTORY_NOT_FOUND));
+    }
 
-    return res.status(200).json(
-      new ApiResponse(200, history, Msg.DATA_FETCHED)
-    );
-  } catch (error) {
     return res
-      .status(500)
-      .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+      .status(200)
+      .json(new ApiResponse(200, history, Msg.BILLING_HISTORY_FETCHED));
+  } catch (error) {
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };

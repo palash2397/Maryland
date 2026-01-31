@@ -175,4 +175,13 @@ export const Msg = {
   LEADERBOARD_ADDED: `Leaderboard added successfully`,
 
 
+  // Payment History
+  BILLING_HISTORY_FETCHED: `Billing history fetched successfully`,
+  BILLING_HISTORY_NOT_FOUND: `Billing history not found`,
+  BILLING_HISTORY_ERROR: `Error fetching billing history`,
+  BILLING_HISTORY_DELETED: `Billing history deleted successfully`,
+  BILLING_HISTORY_UPDATED: `Billing history updated successfully`,
+  BILLING_HISTORY_ADDED: `Billing history added successfully`,
+
+
 };

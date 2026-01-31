@@ -2,7 +2,7 @@ import { Router } from "express";
 import {
   createPaymentIntent,
   confirmPaymentIntent,
-  
+  userBillingHistoryHandle
 
 } from "../controllers/student/payment.controller.js";
 import { auth } from "../middlewares/auth.js";
@@ -16,6 +16,8 @@ paymentRouter.post(
   auth,
   confirmPaymentIntent
 );
+
+paymentRouter.get("/billing-history", auth, userBillingHistoryHandle);
 
 
 export default paymentRouter;
