@@ -51,7 +51,6 @@ export const leaderboardHandle = async (req, res) => {
   }
 };
 
-
 export const leaderboardSummaryHandle = async (req, res) => {
   try {
     const student = await Student.findById(req.user.id)
