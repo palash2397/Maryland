@@ -80,14 +80,14 @@ export const startQuestHandle = async (req, res) => {
       startedAt: new Date(),
     });
 
-    console.log("rewardPoints", quest.rewardPoints);
+   
 
     await Student.updateOne(
       { _id: req.user.id },
       {
         $inc: {
-          xp: quest.rewardPoints.xpPoints,
-          coins: quest.rewardPoints.coins || 0,
+          xp: quest.rewards.xpPoints,
+          coins: quest.rewards.coins || 0,
         },
       },
     );
@@ -398,5 +398,38 @@ export const submitQuestAnswerHandle = async (req, res) => {
   } catch (error) {
     console.error("Submit quest answer error:", error);
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+};
+
+
+
+export const getMyBadgesHandle = async (req, res) => {
+  try {
+    const badges = await StudentBadge.find({
+      studentId: req.user.id,
+    })
+      .populate("badgeId", "title description icon")
+      .lean();
+
+    const response = await Promise.all(
+      badges.map(async (item) => ({
+        _id: item.badgeId._id,
+        title: item.badgeId.title,
+        description: item.badgeId.description,
+        icon: item.badgeId.icon
+          ? await getSignedFileUrl(item.badgeId.icon)
+          : null,
+        unlockedAt: item.unlockedAt,
+      }))
+    );
+
+    return res.status(200).json(
+      new ApiResponse(200, response, Msg.DATA_FETCHED)
+    );
+  } catch (error) {
+    console.error("Error fetching badges:", error);
+    return res
+      .status(500)
+      .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
