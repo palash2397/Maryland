@@ -12,6 +12,7 @@ import {
   allStudentHandle,
   studentHandle,
   changeAccountStatusHandle,
+  allLessonHandle
 } from "../controllers/admin/admin.controller.js";
 
 import {
@@ -69,5 +70,8 @@ adminRouter.get(
 
 // ADMIN DASHBOARD
 adminRouter.get("/dashboard/analytics", auth, isAdmin, adminDashboardHandle);
+
+// Lessons
+adminRouter.get("/all/lessons", auth, isAdmin, allLessonHandle);
 
 export default adminRouter;
