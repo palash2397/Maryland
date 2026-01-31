@@ -192,3 +192,129 @@ export const subscriptionAnalyticsHandle = async (req, res) => {
   }
 };
 
+
+
+export const adminDashboardHandle = async (req, res) => {
+  try {
+    const {
+      startOfThisMonth,
+      startOfLastMonth,
+      endOfLastMonth,
+    } = getMonthRanges();
+
+    /* =======================
+       ACTIVE STUDENTS
+    ======================== */
+    const currentStudents = await Student.countDocuments({
+      isActive: true,
+      createdAt: { $gte: startOfThisMonth },
+    });
+
+    const lastMonthStudents = await Student.countDocuments({
+      isActive: true,
+      createdAt: {
+        $gte: startOfLastMonth,
+        $lte: endOfLastMonth,
+      },
+    });
+
+    const studentGrowth = calculateGrowth(
+      currentStudents,
+      lastMonthStudents,
+    );
+
+    /* =======================
+       TOTAL TEACHERS
+    ======================== */
+    const currentTeachers = await Teacher.countDocuments({
+      createdAt: { $gte: startOfThisMonth },
+    });
+
+    const lastMonthTeachers = await Teacher.countDocuments({
+      createdAt: {
+        $gte: startOfLastMonth,
+        $lte: endOfLastMonth,
+      },
+    });
+
+    const teacherGrowth = calculateGrowth(
+      currentTeachers,
+      lastMonthTeachers,
+    );
+
+    /* =======================
+       QUESTS COMPLETED
+    ======================== */
+    const currentQuestsCompleted = await StudentQuest.countDocuments({
+      status: "completed",
+      completedAt: { $gte: startOfThisMonth },
+    });
+
+    const lastMonthQuestsCompleted =
+      await StudentQuest.countDocuments({
+        status: "completed",
+        completedAt: {
+          $gte: startOfLastMonth,
+          $lte: endOfLastMonth,
+        },
+      });
+
+    const questGrowth = calculateGrowth(
+      currentQuestsCompleted,
+      lastMonthQuestsCompleted,
+    );
+
+    /* =======================
+       TOTAL LESSONS
+    ======================== */
+    const currentLessons = await Lesson.countDocuments({
+      createdAt: { $gte: startOfThisMonth },
+    });
+
+    const lastMonthLessons = await Lesson.countDocuments({
+      createdAt: {
+        $gte: startOfLastMonth,
+        $lte: endOfLastMonth,
+      },
+    });
+
+    const lessonGrowth = calculateGrowth(
+      currentLessons,
+      lastMonthLessons,
+    );
+
+    /* =======================
+       FINAL RESPONSE
+    ======================== */
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          activeStudents: {
+            total: currentStudents,
+            growth: studentGrowth,
+          },
+          totalTeachers: {
+            total: currentTeachers,
+            growth: teacherGrowth,
+          },
+          questsCompleted: {
+            total: currentQuestsCompleted,
+            growth: questGrowth,
+          },
+          totalLessons: {
+            total: currentLessons,
+            growth: lessonGrowth,
+          },
+        },
+        Msg.DATA_FETCHED,
+      ),
+    );
+  } catch (error) {
+    console.error("Admin dashboard error:", error);
+    return res.status(500).json(
+      new ApiResponse(500, {}, Msg.SERVER_ERROR),
+    );
+  }
+};
+

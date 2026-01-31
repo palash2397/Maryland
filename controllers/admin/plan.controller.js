@@ -251,7 +251,8 @@ export const adminBillingHistoryHandle = async (req, res) => {
       return {
         ...item,
         userId: {
-          ...item,
+          name: `${item.userId.firstName} ${item.userId.lastName}`,
+          email: item.userId.email,
           avatar: item.userId.avatar ? await getSignedFileUrl(item.userId.avatar) : `${process.env.DEFAULT_PROFILE_PIC}`,
         },
       };

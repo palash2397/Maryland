@@ -23,6 +23,7 @@ import {
 import {
   contestDashboardHandle,
   subscriptionAnalyticsHandle,
+  adminDashboardHandle
 } from "../controllers/admin/dashboard.controller.js";
 
 import { auth, isAdmin } from "../middlewares/auth.js";
@@ -65,5 +66,8 @@ adminRouter.get(
   isAdmin,
   adminBillingHistoryHandle
 );
+
+// ADMIN DASHBOARD
+adminRouter.get("/dashboard/analytics", auth, isAdmin, adminDashboardHandle);
 
 export default adminRouter;
