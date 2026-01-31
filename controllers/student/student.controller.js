@@ -382,7 +382,7 @@ export const profileHandle = async (req, res) => {
 
     // 1️⃣ Student basic info
     const student = await Student.findById(req.user.id)
-      .select("firstName lastName avatar xp level")
+      .select("firstName lastName avatar xp level isVerified isActive")
       .lean();
 
     if (!student) {
@@ -443,6 +443,9 @@ export const profileHandle = async (req, res) => {
             avatar: student.avatar
               ? await getSignedFileUrl(student.avatar)
               : process.env.DEFAULT_PROFILE_PIC,
+
+            isActive: student.isActive,
+            isVerified: student.isVerified
           },
           progress: {
             xp,
