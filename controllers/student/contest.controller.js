@@ -226,12 +226,14 @@ export const currentQuestQuestionHandle = async (req, res) => {
 export const submitQuestAnswerHandle = async (req, res) => {
   try {
     const { questId, selectedOption } = req.body;
+
+    // 🔹 Validation
     const schema = Joi.object({
       questId: Joi.string().required(),
       selectedOption: Joi.string().required(),
     });
 
-    const { error, value } = schema.validate({ questId, selectedOption });
+    const { error } = schema.validate({ questId, selectedOption });
     if (error) {
       return res
         .status(400)
@@ -259,8 +261,8 @@ export const submitQuestAnswerHandle = async (req, res) => {
         .json(new ApiResponse(404, {}, Msg.QUIZZ_NOT_FOUND));
     }
 
-    const index = studentQuest.currentQuestionIndex;
-    const question = quiz.questions[index];
+    const currentIndex = studentQuest.currentQuestionIndex;
+    const question = quiz.questions[currentIndex];
 
     if (!question) {
       return res
@@ -270,7 +272,6 @@ export const submitQuestAnswerHandle = async (req, res) => {
 
     // 3️⃣ Check answer
     const isCorrect = question.correctAnswer === selectedOption;
-
     if (isCorrect) {
       studentQuest.correctAnswers += 1;
     }
@@ -278,14 +279,15 @@ export const submitQuestAnswerHandle = async (req, res) => {
     // 4️⃣ Move to next question
     studentQuest.currentQuestionIndex += 1;
 
-    // 5️⃣ Check completion
     const isCompleted =
       studentQuest.currentQuestionIndex >= quiz.questions.length;
 
+    // ===========================
+    // 🎯 QUEST COMPLETION LOGIC
+    // ===========================
     if (isCompleted) {
-      // Calculate score (%)
       const score = Math.round(
-        (studentQuest.correctAnswers / quiz.questions.length) * 100,
+        (studentQuest.correctAnswers / quiz.questions.length) * 100
       );
 
       studentQuest.score = score;
@@ -294,40 +296,46 @@ export const submitQuestAnswerHandle = async (req, res) => {
 
       await studentQuest.save();
 
+      // 5️⃣ Fetch quest rewards
       const quest = await Quest.findById(questId).lean();
 
-      if (quest?.rewards) {
-        const update = {};
+      // 6️⃣ Update XP, coins & level
+      const LEVEL_XP = 100;
 
-        if (quest.rewards.xpPoints > 0) {
-          update.$inc = { xp: quest.rewards.xpPoints };
+      const student = await Student.findById(req.user.id).select("xp level");
+
+      const currentXp = student.xp || 0;
+      const earnedXp = quest?.rewards?.xpPoints || 0;
+      const earnedCoins = quest?.rewards?.coins || 0;
+
+      const newXp = currentXp + earnedXp;
+      const newLevel = Math.floor(newXp / LEVEL_XP) + 1;
+
+      await Student.updateOne(
+        { _id: req.user.id },
+        {
+          $set: {
+            xp: newXp,
+            level: newLevel,
+          },
+          $inc: {
+            coins: earnedCoins,
+          },
         }
+      );
 
-        if (quest.rewards.coins > 0) {
-          update.$inc = {
-            ...(update.$inc || {}),
-            coins: quest.rewards.coins,
-          };
-        }
+      // ===========================
+      // 🏅 BADGE UNLOCK LOGIC
+      // ===========================
 
-        if (quest.rewards.badge) {
-          update.$addToSet = { badges: quest.rewards.badge };
-        }
-
-        if (Object.keys(update).length > 0) {
-          await Student.updateOne({ _id: req.user.id }, update);
-        }
-      }
-
+      // Total completed quests
       const completedQuestCount = await StudentQuest.countDocuments({
         studentId: req.user.id,
         status: "completed",
       });
 
-      // 2️⃣ Fetch active badges
       const badges = await Badge.find({ isActive: true });
 
-      // 3️⃣ Check and unlock badges
       for (const badge of badges) {
         let shouldUnlock = false;
 
@@ -348,11 +356,12 @@ export const submitQuestAnswerHandle = async (req, res) => {
             {
               $setOnInsert: { unlockedAt: new Date() },
             },
-            { upsert: true },
+            { upsert: true }
           );
         }
       }
 
+      // ✅ Final response on completion
       return res.status(200).json(
         new ApiResponse(
           200,
@@ -361,13 +370,18 @@ export const submitQuestAnswerHandle = async (req, res) => {
             score,
             correctAnswers: studentQuest.correctAnswers,
             totalQuestions: quiz.questions.length,
+            earnedXp,
+            earnedCoins,
+            newLevel,
           },
-          Msg.QUEST_COMPLETED,
-        ),
+          Msg.QUEST_COMPLETED
+        )
       );
     }
 
-    // 6️⃣ Save progress
+    // ===========================
+    // ⏭️ CONTINUE QUEST
+    // ===========================
     await studentQuest.save();
 
     return res.status(200).json(
@@ -378,8 +392,8 @@ export const submitQuestAnswerHandle = async (req, res) => {
           nextQuestionIndex: studentQuest.currentQuestionIndex,
           correct: isCorrect,
         },
-        "Answer submitted",
-      ),
+        "Answer submitted"
+      )
     );
   } catch (error) {
     console.error("Submit quest answer error:", error);
