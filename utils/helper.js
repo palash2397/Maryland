@@ -7,7 +7,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 
-
 export const generateRandomString = async(num)=>{
     console.log(`nano code -------------->`, nanoid(num).toUpperCase());
     return  nanoid(num).toUpperCase()
@@ -52,4 +51,37 @@ export const deleteFile = (filePath) => {
       console.log("Temporary file deleted:", filePath);
     }
   });
+};
+
+
+export const getMonthRanges = () => {
+  const now = new Date();
+  const startOfThisMonth = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    1,
+  );
+
+  const startOfLastMonth = new Date(
+    now.getFullYear(),
+    now.getMonth() - 1,
+    1,
+  );
+
+  const endOfLastMonth = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    0,
+  );
+
+  return {
+    startOfThisMonth,
+    startOfLastMonth,
+    endOfLastMonth,
+  };
+};
+
+export const calculateGrowth = (current, previous) => {
+  if (!previous || previous === 0) return 0;
+  return Math.round(((current - previous) / previous) * 100);
 };
