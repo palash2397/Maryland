@@ -391,6 +391,11 @@ export const profileHandle = async (req, res) => {
         .json(new ApiResponse(404, {}, Msg.USER_NOT_FOUND));
     }
 
+    if (student.role == "admin") {
+      student.avatar = student.avatar ? await getSignedFileUrl(student.avatar) : `${process.env.DEFAULT_PROFILE_PIC}`;
+      return res.status(200).json(new ApiResponse(200, student, Msg.USER_FETCHED));
+    }
+
     const xp = student.xp ?? 0;
     const level = student.level ?? 1;
 
