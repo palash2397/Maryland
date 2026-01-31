@@ -3,15 +3,14 @@ import Joi from "joi";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { Msg } from "../../utils/responseMsg.js";
 
+import Badge from "../../models/badges/badge.js";
+import StudentBadge from "../../models/badges/studentBadges.js";
+
 import Quiz from "../../models/quizz/quizz.js";
 import Quest from "../../models/quest/quest.js";
 import StudentQuest from "../../models/studentQuest/studentQuest.js";
 
-// import {
-//   generateRandomString,
-//   getExpirationTime,
-//   deleteOldImages,
-// } from "../../utils/helper.js";
+
 import Teacher from "../../models/teacher/teacher.js";
 
 import { getSignedFileUrl } from "../../utils/s3SignedUrl.js";
@@ -264,7 +263,7 @@ export const submitQuestAnswerHandle = async (req, res) => {
     if (!question) {
       return res
         .status(400)
-        .json(new ApiResponse(400, {}, Msg.QUEST_QUESTION_NOT_F));
+        .json(new ApiResponse(400, {}, Msg.QUEST_QUESTION_NOT_FOUND));
     }
 
     // 3️⃣ Check answer
@@ -315,6 +314,40 @@ export const submitQuestAnswerHandle = async (req, res) => {
 
         if (Object.keys(update).length > 0) {
           await Student.updateOne({ _id: req.user.id }, update);
+        }
+      }
+
+      const completedQuestCount = await StudentQuest.countDocuments({
+        studentId: req.user.id,
+        status: "completed",
+      });
+
+      // 2️⃣ Fetch active badges
+      const badges = await Badge.find({ isActive: true });
+
+      // 3️⃣ Check and unlock badges
+      for (const badge of badges) {
+        let shouldUnlock = false;
+
+        if (badge.type === "quest") {
+          shouldUnlock = completedQuestCount >= badge.conditionValue;
+        }
+
+        if (badge.type === "level") {
+          shouldUnlock = newLevel >= badge.conditionValue;
+        }
+
+        if (shouldUnlock) {
+          await StudentBadge.updateOne(
+            {
+              studentId: req.user.id,
+              badgeId: badge._id,
+            },
+            {
+              $setOnInsert: { unlockedAt: new Date() },
+            },
+            { upsert: true },
+          );
         }
       }
 
