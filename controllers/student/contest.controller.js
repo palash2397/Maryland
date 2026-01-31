@@ -80,12 +80,14 @@ export const startQuestHandle = async (req, res) => {
       startedAt: new Date(),
     });
 
+    console.log("rewardPoints", quest.rewardPoints);
+
     await Student.updateOne(
       { _id: req.user.id },
       {
         $inc: {
-          xp: quest.rewardPoints,
-          coins: quest.rewardCoins || 0,
+          xp: quest.rewardPoints.xpPoints,
+          coins: quest.rewardPoints.coins || 0,
         },
       },
     );

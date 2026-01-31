@@ -140,6 +140,7 @@ export const Msg = {
 
   // Quest Question
   QUEST_QUESTION_FETCHED: `Quest question fetched successfully`,
+  QUEST_COMPLETED: `Quest completed successfully`,
   QUEST_QUESTION_NOT_FOUND: `Quest question not found`,
   QUEST_QUESTION_ERROR: `Error fetching quest question`,
   QUEST_QUESTION_LIMIT_EXCEEDED: `Quest question limit exceeded`,
