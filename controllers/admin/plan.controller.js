@@ -236,6 +236,7 @@ export const createSubscriptionCheckout = async (req, res) => {
 export const adminBillingHistoryHandle = async (req, res) => {
   try {
     const history = await BillingHistory.find()
+
       .populate("userId", "firstName lastName email")
       .populate("planId", "name")
       .sort({ paidAt: -1 })

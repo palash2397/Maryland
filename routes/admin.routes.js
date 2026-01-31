@@ -5,6 +5,7 @@ import {
   updatePlanHandle,
   getPlansHandle,
   getPlanHandle,
+  adminBillingHistoryHandle
 } from "../controllers/admin/plan.controller.js";
 
 import {
@@ -54,6 +55,15 @@ adminRouter.get(
   auth,
   isAdmin,
   subscriptionAnalyticsHandle
+);
+
+
+// BILLING HISTORY
+adminRouter.get(
+  "/billing/history",
+  auth,
+  isAdmin,
+  adminBillingHistoryHandle
 );
 
 export default adminRouter;
