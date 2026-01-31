@@ -163,7 +163,7 @@ export const stripeWebhookHandle = async (req, res) => {
         const startDate = toDateOrNull(sub.current_period_start);
         const endDate = toDateOrNull(sub.current_period_end);
 
-        const userSubscription = await UserSubscription.findOneAndUpdate(
+         await UserSubscription.findOneAndUpdate(
           { stripeSubscriptionId: subscriptionId },
           {
             status: "active",
@@ -176,17 +176,29 @@ export const stripeWebhookHandle = async (req, res) => {
           { upsert: true, new: true },
         );
 
+        // console.log("userSubscription", userSubscription);
+
+        const userSubscription = await UserSubscription.findOne({ stripeSubscriptionId: subscriptionId });
+        if (!userSubscription) {
+          return res.status(404).json({ message: "User subscription not found" });
+
+        }
+
+        console.log("userSubscription", userSubscription);
+
         if (userSubscription) {
           await BillingHistory.create({
             userId: userSubscription.userId,
             subscriptionId: userSubscription._id,
             planId: userSubscription.planId,
-            stripePaymentIntentId: invoice.payment_intent.id,
+            stripePaymentIntentId: userSubscription.paymentIntenId,
             stripeInvoiceId: invoice.id,
             amount: invoice.amount_paid,
             currency: invoice.currency,
             paidAt: new Date(invoice.created * 1000),
           });
+
+          console.log("BillingHistory created");
         }
 
         break;
@@ -259,5 +271,31 @@ export const stripeWebhookHandle = async (req, res) => {
   } catch (error) {
     console.error("Webhook processing error:", error);
     return res.status(500).send("Webhook handler failed");
+  }
+};
+
+
+export const userBillingHistoryHandle = async (req, res) => {
+  try {
+    const history = await BillingHistory.find({
+      userId: req.user.id,
+    })
+      .populate("planId", "name price interval")
+      .sort({ paidAt: -1 })
+      .lean();
+
+    // if (!history || history.length === 0) {
+    //   return res.status(200).json(
+    //     new ApiResponse(200, [], Msg.)
+    //   );
+    // }
+
+    return res.status(200).json(
+      new ApiResponse(200, history, Msg.DATA_FETCHED)
+    );
+  } catch (error) {
+    return res
+      .status(500)
+      .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
