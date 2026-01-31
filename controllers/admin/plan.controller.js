@@ -7,6 +7,8 @@ import UserSubscription from "../../models/subcription/userSubscription.js";
 import BillingHistory from "../../models/billing/billingHistory.js";
 import Plan from "../../models/plan/plan.js";
 
+import { getSignedFileUrl } from "../../utils/s3SignedUrl.js";
+
 const createStripePriceForPlan = async (plan) => {
   // 1. Create product
   const product = await stripe.products.create({
@@ -194,8 +196,7 @@ export const createSubscriptionCheckout = async (req, res) => {
       customerId = customer.id;
     }
 
-    const stripeSubscription = 
-    await stripe.subscriptions.create({
+    const stripeSubscription = await stripe.subscriptions.create({
       customer: customerId,
       items: [{ price: plan.stripePriceId }],
       payment_behavior: "default_incomplete",
@@ -232,24 +233,34 @@ export const createSubscriptionCheckout = async (req, res) => {
   }
 };
 
-
 export const adminBillingHistoryHandle = async (req, res) => {
   try {
     const history = await BillingHistory.find()
 
-      .populate("userId", "firstName lastName email")
+      .populate("userId", "firstName lastName email avatar")
       .populate("planId", "name")
       .sort({ paidAt: -1 })
       .limit(100)
       .lean();
 
-    return res.status(200).json(
-      new ApiResponse(200, history, Msg.BILLING_HISTORY_FETCHED)
-    );
-  } catch (error) {
+      console.log(history)
+
+
+     const formattedHistory = await Promise.all(history.map(async (item) => {
+      console.log(item.userId.avatar)
+      return {
+        ...item,
+        userId: {
+          ...item,
+          avatar: item.userId.avatar ? await getSignedFileUrl(item.userId.avatar) : `${process.env.DEFAULT_PROFILE_PIC}`,
+        },
+      };
+     }));
     return res
-      .status(500)
-      .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+      .status(200)
+      .json(new ApiResponse(200, formattedHistory, Msg.BILLING_HISTORY_FETCHED));
+  } catch (error) {
+    console.error("Billing history error:", error);
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
-
