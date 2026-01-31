@@ -19,6 +19,8 @@ import {
   teacherAccountStatusHandle,
 } from "../controllers/admin/teacher.controller.js";
 
+import { contestDashboardHandle } from "../controllers/admin/dashboard.controller.js";
+
 import { auth, isAdmin } from "../middlewares/auth.js";
 
 const adminRouter = Router();
@@ -38,5 +40,8 @@ adminRouter.patch("/student/:id", auth, isAdmin, changeAccountStatusHandle);
 adminRouter.get("/all/teachers", auth, isAdmin, allTeacherHandle);
 adminRouter.get("/teacher/:id", auth, isAdmin, teacherHandle);
 adminRouter.patch("/teacher/:id", auth, isAdmin, teacherAccountStatusHandle);
+
+// CONTEST DASHBOARD
+adminRouter.get("/contest/dashboard", auth, isAdmin, contestDashboardHandle);
 
 export default adminRouter;
