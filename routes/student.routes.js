@@ -70,6 +70,7 @@ studentRouter.get("/lesson/:id", auth, lessonByIdHandle);
 studentRouter.get("/lesson/chapters/:lessonId", auth, lessonChaptersHandle);
 studentRouter.get("/lesson/chapter/play/:chapterId", auth, playChapterHandle);
 studentRouter.post("/lesson/chapter/complete", auth, completeChapterHandle);
+studentRouter.get("/lesson/progress/:lessonId", auth, getLessonProgressHandle);
 
 // Teacher review routes
 studentRouter.post("/teacher-review", auth, addTeacherReviewHandle);
