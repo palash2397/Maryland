@@ -74,6 +74,7 @@ export const Msg = {
   LESSON_FETCHED: `Lessons fetched successfully`,
   LESSON_LIST: `Lesson list fetched successfully`,
   LESSON_DETAIL: `Lesson detail fetched successfully`,
+  LESSON_NOT_STARTED: `Lesson not started yet`,
 
   // chapter 
   CHAPTER_CREATED: `Chapter created successfully`,
@@ -84,6 +85,8 @@ export const Msg = {
   CHAPTER_DETAIL: `Chapter detail fetched successfully`,
   CHAPTER_FETCHED: `Chapter fetched successfully`,
   CHAPTERS_FETCHED: `Chapters fetched successfully`,
+  CHAPTER_ALREADY_COMPLETED: `Chapter already completed`,
+  CHAPTER_COMPLETED: `Chapter completed successfully`,
 
   // Thumbnail
   THUMBNAIL_GENERATED: `Thumbnail generated successfully`,

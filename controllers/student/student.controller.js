@@ -908,12 +908,9 @@ export const mySubscriptionHandle = async (req, res) => {
   }
 };
 
-
-
-
 export const completeChapterHandle = async (req, res) => {
   try {
-    const { chapterId } = req.body;
+    const { chapterId } = req.params;
     const studentId = req.user.id;
 
     // 1️⃣ Fetch chapter
@@ -921,7 +918,7 @@ export const completeChapterHandle = async (req, res) => {
     if (!chapter) {
       return res
         .status(404)
-        .json(new ApiResponse(404, {}, "Chapter not found"));
+        .json(new ApiResponse(404, {}, Msg.CHAPTER_NOT_FOUND));
     }
 
     const lessonId = chapter.lessonId;
@@ -938,7 +935,7 @@ export const completeChapterHandle = async (req, res) => {
         new ApiResponse(
           400,
           {},
-          "Lesson not started yet",
+          Msg.LESSON_NOT_STARTED,
         ),
       );
     }
@@ -949,7 +946,7 @@ export const completeChapterHandle = async (req, res) => {
         new ApiResponse(
           200,
           { progress: lessonProgress.progress },
-          "Chapter already completed",
+          Msg.CHAPTER_ALREADY_COMPLETED,
         ),
       );
     }
@@ -986,7 +983,7 @@ export const completeChapterHandle = async (req, res) => {
           progress,
           lessonCompleted: lessonProgress.status === "completed",
         },
-        "Chapter completed",
+        Msg.CHAPTER_COMPLETED,
       ),
     );
   } catch (error) {
