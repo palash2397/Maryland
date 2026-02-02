@@ -911,6 +911,13 @@ export const mySubscriptionHandle = async (req, res) => {
 export const completeChapterHandle = async (req, res) => {
   try {
     const { chapterId } = req.params;
+    const schema = Joi.object({
+      chapterId: Joi.string().required(),
+    });
+    const { error } = schema.validate(req.params);
+    if (error) {
+      return res.status(400).json(new ApiResponse(400, {}, Msg.ID_REQUIRED));
+    }
     const studentId = req.user.id;
 
     // 1️⃣ Fetch chapter
@@ -931,24 +938,22 @@ export const completeChapterHandle = async (req, res) => {
     });
 
     if (!lessonProgress) {
-      return res.status(400).json(
-        new ApiResponse(
-          400,
-          {},
-          Msg.LESSON_NOT_STARTED,
-        ),
-      );
+      return res
+        .status(400)
+        .json(new ApiResponse(400, {}, Msg.LESSON_NOT_STARTED));
     }
 
     // 3️⃣ Avoid duplicate completion
     if (lessonProgress.completedVideos.includes(chapterId)) {
-      return res.status(200).json(
-        new ApiResponse(
-          200,
-          { progress: lessonProgress.progress },
-          Msg.CHAPTER_ALREADY_COMPLETED,
-        ),
-      );
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            { progress: lessonProgress.progress },
+            Msg.CHAPTER_ALREADY_COMPLETED,
+          ),
+        );
     }
 
     // 4️⃣ Add completed chapter
@@ -962,9 +967,7 @@ export const completeChapterHandle = async (req, res) => {
     });
 
     const completedCount = lessonProgress.completedVideos.length;
-    const progress = Math.round(
-      (completedCount / totalChapters) * 100,
-    );
+    const progress = Math.round((completedCount / totalChapters) * 100);
 
     lessonProgress.progress = progress;
 
@@ -988,11 +991,146 @@ export const completeChapterHandle = async (req, res) => {
     );
   } catch (error) {
     console.error("Complete chapter error:", error);
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+};
+
+export const getLessonProgressHandle = async (req, res) => {
+  try {
+    const { lessonId } = req.params;
+    const schema = Joi.object({
+      lessonId: Joi.string().required(),
+    });
+    const { error } = schema.validate(req.params);
+    if (error) {
+      return res.status(400).json(new ApiResponse(400, {}, Msg.ID_REQUIRED));
+    }
+    const studentId = req.user.id;
+
+    // 1️⃣ Validate lesson exists
+    const lesson = await Lesson.findById(lessonId).lean();
+    if (!lesson) {
+      return res
+        .status(404)
+        .json(new ApiResponse(404, {}, Msg.LESSON_NOT_FOUND));
+    }
+
+    // 2️⃣ Fetch student progress
+    const progress = await StudentLessonProgress.findOne({
+      studentId,
+      lessonId,
+    }).lean();
+
+    // 3️⃣ If student never started lesson
+    if (!progress) {
+      return res.status(200).json(
+        new ApiResponse(
+          200,
+          {
+            lessonId,
+            status: "notStarted",
+            progress: 0,
+            completedVideos: [],
+            lastVideoId: null,
+          },
+          Msg.DATA_FETCHED,
+        ),
+      );
+    }
+
+    // 4️⃣ Return progress
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          lessonId,
+          status: progress.status,
+          progress: progress.progress,
+          completedVideos: progress.completedVideos,
+          lastVideoId: progress.lastVideoId,
+        },
+        Msg.DATA_FETCHED,
+      ),
+    );
+  } catch (error) {
+    console.error("Get lesson progress error:", error);
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+};
+
+
+export const studentDashboardHandle = async (req, res) => {
+  try {
+    const studentId = req.user.id;
+
+    // 1️⃣ Core student info
+    const student = await Student.findById(studentId)
+      .select("xp level")
+      .lean();
+
+    // 2️⃣ Stats
+    const completedLessons = await StudentLessonProgress.countDocuments({
+      studentId,
+      status: "completed",
+    });
+
+    const activeLesson = await StudentLessonProgress.findOne({
+      studentId,
+      status: "inProgress",
+    })
+      .populate("lessonId", "title")
+      .lean();
+
+    const activeQuest = await StudentQuest.findOne({
+      studentId,
+      status: "inProgress",
+    })
+      .populate("questId", "title questionCount")
+      .lean();
+
+    const badgesEarned = await StudentBadge.countDocuments({
+      studentId,
+    });
+
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          points: student?.xp || 0,
+          level: student?.level || 1,
+
+          stats: {
+            completedLessons,
+            badgesEarned,
+          },
+
+          currentLesson: activeLesson
+            ? {
+                lessonId: activeLesson.lessonId._id,
+                title: activeLesson.lessonId.title,
+                progress: activeLesson.progress,
+                lastVideoId: activeLesson.lastVideoId,
+              }
+            : null,
+
+          activeQuest: activeQuest
+            ? {
+                questId: activeQuest.questId._id,
+                title: activeQuest.questId.title,
+                completed: activeQuest.currentQuestionIndex,
+                total: activeQuest.questId.questionCount,
+              }
+            : null,
+        },
+        Msg.DATA_FETCHED,
+      ),
+    );
+  } catch (error) {
+    console.error("Student dashboard error:", error);
     return res
       .status(500)
       .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
-
 
 // export const dashboard

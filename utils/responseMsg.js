@@ -44,6 +44,10 @@ export const Msg = {
   DATA_REQUIRED: `Data is required`,
   DATA_ALREADY_EXISTS: `Data  already exists`,
 
+
+  // Id
+  ID_REQUIRED: `Id is required`,
+
   // Profile
   USERNAME_EXISTS: `Username already exists`,
 
