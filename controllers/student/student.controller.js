@@ -911,13 +911,6 @@ export const mySubscriptionHandle = async (req, res) => {
 export const completeChapterHandle = async (req, res) => {
   try {
     const { chapterId } = req.params;
-    const schema = Joi.object({
-      chapterId: Joi.string().required(),
-    });
-    const { error } = schema.validate(req.params);
-    if (error) {
-      return res.status(400).json(new ApiResponse(400, {}, Msg.ID_REQUIRED));
-    }
     const studentId = req.user.id;
 
     // 1️⃣ Fetch chapter
@@ -925,7 +918,7 @@ export const completeChapterHandle = async (req, res) => {
     if (!chapter) {
       return res
         .status(404)
-        .json(new ApiResponse(404, {}, Msg.CHAPTER_NOT_FOUND));
+        .json(new ApiResponse(404, {}, "Chapter not found"));
     }
 
     const lessonId = chapter.lessonId;
@@ -940,20 +933,20 @@ export const completeChapterHandle = async (req, res) => {
     if (!lessonProgress) {
       return res
         .status(400)
-        .json(new ApiResponse(400, {}, Msg.LESSON_NOT_STARTED));
+        .json(new ApiResponse(400, {}, "Lesson not started"));
     }
 
     // 3️⃣ Avoid duplicate completion
     if (lessonProgress.completedVideos.includes(chapterId)) {
-      return res
-        .status(200)
-        .json(
-          new ApiResponse(
-            200,
-            { progress: lessonProgress.progress },
-            Msg.CHAPTER_ALREADY_COMPLETED,
-          ),
-        );
+      return res.status(200).json(
+        new ApiResponse(
+          200,
+          {
+            progress: lessonProgress.progress,
+          },
+          "Chapter already completed",
+        ),
+      );
     }
 
     // 4️⃣ Add completed chapter
@@ -967,13 +960,41 @@ export const completeChapterHandle = async (req, res) => {
     });
 
     const completedCount = lessonProgress.completedVideos.length;
-    const progress = Math.round((completedCount / totalChapters) * 100);
+    const progress = Math.round(
+      (completedCount / totalChapters) * 100,
+    );
 
     lessonProgress.progress = progress;
 
-    // 6️⃣ Mark lesson completed if 100%
+    // 6️⃣ Lesson completed
     if (completedCount >= totalChapters) {
       lessonProgress.status = "completed";
+
+      // 🔥 GRANT REWARDS (only once)
+      if (!lessonProgress.rewarded) {
+        const lesson = await Lesson.findById(lessonId).lean();
+
+        if (lesson?.rewards) {
+          const update = {};
+
+          if (lesson.rewards.xp > 0) {
+            update.$inc = { xp: lesson.rewards.xp };
+          }
+
+          if (lesson.rewards.coins > 0) {
+            update.$inc = {
+              ...(update.$inc || {}),
+              coins: lesson.rewards.coins,
+            };
+          }
+
+          if (Object.keys(update).length > 0) {
+            await Student.updateOne({ _id: studentId }, update);
+          }
+        }
+
+        lessonProgress.rewarded = true;
+      }
     }
 
     await lessonProgress.save();
@@ -986,14 +1007,17 @@ export const completeChapterHandle = async (req, res) => {
           progress,
           lessonCompleted: lessonProgress.status === "completed",
         },
-        Msg.CHAPTER_COMPLETED,
+        "Chapter completed",
       ),
     );
   } catch (error) {
     console.error("Complete chapter error:", error);
-    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+    return res
+      .status(500)
+      .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
+
 
 export const getLessonProgressHandle = async (req, res) => {
   try {
