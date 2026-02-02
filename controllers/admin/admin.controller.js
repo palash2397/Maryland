@@ -5,6 +5,7 @@ import { Msg } from "../../utils/responseMsg.js";
 import UserSubscription from "../../models/subcription/userSubscription.js";
 import Plan from "../../models/plan/plan.js";
 import Lesson from "../../models/lesson/lesson.js";
+import Video from "../../models/lesson/video.js";
 
 import { getSignedFileUrl } from "../../utils/s3SignedUrl.js";
 
@@ -104,27 +105,35 @@ export const changeAccountStatusHandle = async (req, res) => {
 
 export const allLessonHandle = async (req, res) => {
   try {
-    const data = await Lesson.find()
-                 .populate("teacherId", "firstName lastName email avatar");
+    const data = await Lesson.find().populate(
+      "teacherId",
+      "firstName lastName email avatar",
+    );
     if (!data || data.length == 0)
       return res
         .status(404)
         .json(new ApiResponse(404, {}, Msg.LESSON_NOT_FOUND));
 
-    const formattedData = await Promise.all(data.map(async (lesson) => {
-      
-      return {
-           
-        ...lesson.toObject(),
-        thumbnail: lesson.thumbnail ? await getSignedFileUrl(lesson.thumbnail) : null,
-        teacherId: {
-          ...lesson.teacherId.toObject(),
-          avatar: lesson.teacherId.avatar ? await getSignedFileUrl(lesson.teacherId.avatar) : `${process.env.DEFAULT_PROFILE_PIC}`
-        }
-      };
-    }));
-    
-    return res.status(200).json(new ApiResponse(200, formattedData, Msg.LESSON_FETCHED));
+    const formattedData = await Promise.all(
+      data.map(async (lesson) => {
+        return {
+          ...lesson.toObject(),
+          thumbnail: lesson.thumbnail
+            ? await getSignedFileUrl(lesson.thumbnail)
+            : null,
+          teacherId: {
+            ...lesson.teacherId.toObject(),
+            avatar: lesson.teacherId.avatar
+              ? await getSignedFileUrl(lesson.teacherId.avatar)
+              : `${process.env.DEFAULT_PROFILE_PIC}`,
+          },
+        };
+      }),
+    );
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, formattedData, Msg.LESSON_FETCHED));
   } catch (error) {
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
@@ -142,19 +151,70 @@ export const lessonHandle = async (req, res) => {
         .status(400)
         .json(new ApiResponse(400, {}, error.details[0].message));
     }
-    
-    const lesson = await Lesson.findById(id).populate("teacherId", "firstName lastName email avatar");
+
+    const lesson = await Lesson.findById(id).populate(
+      "teacherId",
+      "firstName lastName email avatar",
+    );
     if (!lesson) {
-      return res.status(404).json(new ApiResponse(404, {}, Msg.LESSON_NOT_FOUND));
+      return res
+        .status(404)
+        .json(new ApiResponse(404, {}, Msg.LESSON_NOT_FOUND));
     }
-    
-    lesson.thumbnail = lesson.thumbnail ? await getSignedFileUrl(lesson.thumbnail) : null;
-    lesson.teacherId.avatar = lesson.teacherId.avatar ? await getSignedFileUrl(lesson.teacherId.avatar) : `${process.env.DEFAULT_PROFILE_PIC}`;
-    
-    return res.status(200).json(new ApiResponse(200, lesson, Msg.LESSON_FETCHED));
+
+    lesson.thumbnail = lesson.thumbnail
+      ? await getSignedFileUrl(lesson.thumbnail)
+      : null;
+    lesson.teacherId.avatar = lesson.teacherId.avatar
+      ? await getSignedFileUrl(lesson.teacherId.avatar)
+      : `${process.env.DEFAULT_PROFILE_PIC}`;
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, lesson, Msg.LESSON_FETCHED));
   } catch (error) {
     console.log(`error while getting lesson`, error);
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
-    
   }
-}
+};
+
+export const allChapterHandle = async (req, res) => {
+  try {
+    const chapters = await Video.find({})
+      .populate("lessonId", "title")
+      .populate("teacherId", "firstName lastName email avatar");
+
+    if (!chapters || chapters.length === 0) {
+      return res
+        .status(404)
+        .json(new ApiResponse(404, {}, Msg.CHAPTER_NOT_FOUND));
+    }
+
+    const formattedData = await Promise.all(
+      chapters.map(async (chapter) => {
+        return {
+          ...chapter.toObject(),
+          videoUrl: chapter.videoUrl
+            ? await getSignedFileUrl(chapter.videoUrl)
+            : null,
+          thumbnail: chapter.thumbnail
+            ? await getSignedFileUrl(chapter.thumbnail)
+            : null,
+          teacherId: {
+            ...chapter.teacherId.toObject(),
+            avatar: chapter.teacherId.avatar
+              ? await getSignedFileUrl(chapter.teacherId.avatar)
+              : `${process.env.DEFAULT_PROFILE_PIC}`,
+          },
+        };
+      }),
+    );
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, formattedData, Msg.CHAPTERS_FETCHED));
+  } catch (error) {
+    console.log(`error while getting chapters`, error);
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+};

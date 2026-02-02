@@ -82,7 +82,8 @@ export const Msg = {
   CHAPTER_UPDATE: `Chapter updated successfully`,
   CHAPTER_LIST: `Chapter list fetched successfully`,
   CHAPTER_DETAIL: `Chapter detail fetched successfully`,
-  CHAPTER_FETCHED: `Chapters fetched successfully`,
+  CHAPTER_FETCHED: `Chapter fetched successfully`,
+  CHAPTERS_FETCHED: `Chapters fetched successfully`,
 
   // Thumbnail
   THUMBNAIL_GENERATED: `Thumbnail generated successfully`,

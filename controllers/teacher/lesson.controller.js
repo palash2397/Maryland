@@ -164,7 +164,7 @@ export const allChaptersByLessonId = async (req, res) => {
     const chapters = await Video.find({ lessonId: id, teacherId }).lean();
 
     if (!chapters || chapters.length === 0) {
-      return res.status(404).json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND));
+      return res.status(404).json(new ApiResponse(404, {}, Msg.CHAPTER_NOT_FOUND));
     }
 
     return res
