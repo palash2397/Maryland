@@ -17,6 +17,9 @@ import {
   mySubscriptionHandle,
   lessonChaptersHandle,
   playChapterHandle,
+  completeChapterHandle,
+  getLessonProgressHandle,
+  studentDashboardHandle,
 } from "../controllers/student/student.controller.js";
 
 import { userBillingHistoryHandle } from "../controllers/student/payment.controller.js";
@@ -66,6 +69,8 @@ studentRouter.get("/lessons", auth, allLessonsHandle);
 studentRouter.get("/lesson/:id", auth, lessonByIdHandle);
 studentRouter.get("/lesson/chapters/:lessonId", auth, lessonChaptersHandle);
 studentRouter.get("/lesson/chapter/play/:chapterId", auth, playChapterHandle);
+studentRouter.post("/lesson/chapter/complete", auth, completeChapterHandle);
+
 
 // Teacher review routes
 studentRouter.post("/teacher-review", auth, addTeacherReviewHandle);
