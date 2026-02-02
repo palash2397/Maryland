@@ -71,7 +71,6 @@ studentRouter.get("/lesson/chapters/:lessonId", auth, lessonChaptersHandle);
 studentRouter.get("/lesson/chapter/play/:chapterId", auth, playChapterHandle);
 studentRouter.post("/lesson/chapter/complete", auth, completeChapterHandle);
 
-
 // Teacher review routes
 studentRouter.post("/teacher-review", auth, addTeacherReviewHandle);
 studentRouter.get("/teacher-review/:id", auth, myTeacherReviewsHandle);
