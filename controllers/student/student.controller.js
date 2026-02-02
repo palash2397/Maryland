@@ -4,6 +4,7 @@ import Jwt from "jsonwebtoken";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { Msg } from "../../utils/responseMsg.js";
 import UserSubscription from "../../models/subcription/userSubscription.js";
+import StudentLessonProgress from "../../models/lesson/studentLesson.js";
 
 import {
   generateRandomString,
@@ -376,7 +377,7 @@ export const updateProfileHandle = async (req, res) => {
 };
 
 export const profileHandle = async (req, res) => {
- try {
+  try {
     const LEVEL_XP = 100;
 
     // 1️⃣ Student basic info
@@ -385,14 +386,16 @@ export const profileHandle = async (req, res) => {
       .lean();
 
     if (!student) {
-      return res
-        .status(404)
-        .json(new ApiResponse(404, {}, Msg.USER_NOT_FOUND));
+      return res.status(404).json(new ApiResponse(404, {}, Msg.USER_NOT_FOUND));
     }
 
     if (student.role == "admin") {
-      student.avatar = student.avatar ? await getSignedFileUrl(student.avatar) : `${process.env.DEFAULT_PROFILE_PIC}`;
-      return res.status(200).json(new ApiResponse(200, student, Msg.USER_FETCHED));
+      student.avatar = student.avatar
+        ? await getSignedFileUrl(student.avatar)
+        : `${process.env.DEFAULT_PROFILE_PIC}`;
+      return res
+        .status(200)
+        .json(new ApiResponse(200, student, Msg.USER_FETCHED));
     }
 
     const xp = student.xp ?? 0;
@@ -402,7 +405,7 @@ export const profileHandle = async (req, res) => {
     const levelBaseXp = (level - 1) * LEVEL_XP;
     const progress = Math.min(
       Math.floor(((xp - levelBaseXp) / LEVEL_XP) * 100),
-      100
+      100,
     );
 
     // 3️⃣ Completed quests count
@@ -421,11 +424,9 @@ export const profileHandle = async (req, res) => {
     const badgeList = await Promise.all(
       badges.map(async (b) => ({
         title: b.badgeId.title,
-        icon: b.badgeId.icon
-          ? await getSignedFileUrl(b.badgeId.icon)
-          : null,
+        icon: b.badgeId.icon ? await getSignedFileUrl(b.badgeId.icon) : null,
         unlockedAt: b.unlockedAt,
-      }))
+      })),
     );
 
     // 5️⃣ Subscription
@@ -435,8 +436,7 @@ export const profileHandle = async (req, res) => {
     }).lean();
 
     // 6️⃣ Leaderboard rank
-    const rank =
-      (await Student.countDocuments({ xp: { $gt: xp } })) + 1;
+    const rank = (await Student.countDocuments({ xp: { $gt: xp } })) + 1;
 
     return res.status(200).json(
       new ApiResponse(
@@ -449,7 +449,7 @@ export const profileHandle = async (req, res) => {
               : process.env.DEFAULT_PROFILE_PIC,
 
             isActive: student.isActive,
-            isVerified: student.isVerified
+            isVerified: student.isVerified,
           },
           progress: {
             xp,
@@ -472,14 +472,12 @@ export const profileHandle = async (req, res) => {
                 validTill: null,
               },
         },
-        Msg.USER_FETCHED
-      )
+        Msg.USER_FETCHED,
+      ),
     );
   } catch (error) {
     console.error("Student profile error:", error);
-    return res
-      .status(500)
-      .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
 
@@ -665,6 +663,7 @@ export const playChapterHandle = async (req, res) => {
   try {
     const { chapterId } = req.params;
 
+    // 1️⃣ Fetch chapter
     const chapter = await Video.findOne({
       _id: chapterId,
       status: "published",
@@ -676,22 +675,46 @@ export const playChapterHandle = async (req, res) => {
         .json(new ApiResponse(404, {}, "Chapter not found"));
     }
 
-    // ✅ FREE chapter → allow everyone
-    if (chapter.accessType === "free") {
-      return res
-        .status(200)
-        .json(
-          new ApiResponse(
-            200,
-            { videoUrl: await getSignedFileUrl(chapter.videoUrl) },
-            Msg.DATA_FETCHED,
-          ),
-        );
+    const lessonId = chapter.lessonId;
+    const studentId = req.user.id;
+
+    // 2️⃣ 🔥 STEP-1: Ensure lesson progress exists
+    let lessonProgress = await StudentLessonProgress.findOne({
+      studentId,
+      lessonId,
+    });
+
+    if (!lessonProgress) {
+      lessonProgress = await StudentLessonProgress.create({
+        studentId,
+        lessonId,
+        completedVideos: [],
+        progress: 0,
+        status: "inProgress",
+        lastVideoId: chapter._id,
+      });
+    } else if (!lessonProgress.lastVideoId) {
+      // keep last played video updated
+      lessonProgress.lastVideoId = chapter._id;
+      await lessonProgress.save();
     }
 
-    // 🔒 PAID chapter → subscription required
+    // 3️⃣ ✅ FREE chapter → allow everyone
+    if (chapter.accessType === "free") {
+      return res.status(200).json(
+        new ApiResponse(
+          200,
+          {
+            videoUrl: await getSignedFileUrl(chapter.videoUrl),
+          },
+          Msg.DATA_FETCHED,
+        ),
+      );
+    }
+
+    // 4️⃣ 🔒 PAID chapter → subscription required
     const subscription = await UserSubscription.findOne({
-      userId: req.user.id,
+      userId: studentId,
       status: "active",
     }).lean();
 
@@ -701,14 +724,14 @@ export const playChapterHandle = async (req, res) => {
         .json(new ApiResponse(403, {}, Msg.SUBSCRIPTION_ACTIVE_REQUIRED));
     }
 
-    // ⏰ Expiry check (reuse your logic)
+    // 5️⃣ ⏰ Expiry check
     if (subscription.endDate && subscription.endDate < new Date()) {
       return res
         .status(403)
         .json(new ApiResponse(403, {}, Msg.SUBSCRIPTION_EXPIRED));
     }
 
-    // 📊 Plan comparison
+    // 6️⃣ 📊 Plan comparison
     const PLAN_ORDER = {
       free: 0,
       pro: 1,
@@ -721,16 +744,16 @@ export const playChapterHandle = async (req, res) => {
         .json(new ApiResponse(403, {}, Msg.SUBSCRIPTION_PLAN_REQUIRED));
     }
 
-    // ✅ All checks passed
-    return res
-      .status(200)
-      .json(
-        new ApiResponse(
-          200,
-          { videoUrl: await getSignedFileUrl(chapter.videoUrl) },
-          Msg.DATA_FETCHED,
-        ),
-      );
+    // 7️⃣ ✅ All checks passed
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          videoUrl: await getSignedFileUrl(chapter.videoUrl),
+        },
+        Msg.DATA_FETCHED,
+      ),
+    );
   } catch (error) {
     console.error("Play chapter error:", error);
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
@@ -882,6 +905,95 @@ export const mySubscriptionHandle = async (req, res) => {
   } catch (error) {
     console.error("Error fetching subscription:", error);
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+};
+
+
+
+
+export const completeChapterHandle = async (req, res) => {
+  try {
+    const { chapterId } = req.body;
+    const studentId = req.user.id;
+
+    // 1️⃣ Fetch chapter
+    const chapter = await Video.findById(chapterId).lean();
+    if (!chapter) {
+      return res
+        .status(404)
+        .json(new ApiResponse(404, {}, "Chapter not found"));
+    }
+
+    const lessonId = chapter.lessonId;
+
+    // 2️⃣ Fetch lesson progress
+    const lessonProgress = await StudentLessonProgress.findOne({
+      studentId,
+      lessonId,
+      status: "inProgress",
+    });
+
+    if (!lessonProgress) {
+      return res.status(400).json(
+        new ApiResponse(
+          400,
+          {},
+          "Lesson not started yet",
+        ),
+      );
+    }
+
+    // 3️⃣ Avoid duplicate completion
+    if (lessonProgress.completedVideos.includes(chapterId)) {
+      return res.status(200).json(
+        new ApiResponse(
+          200,
+          { progress: lessonProgress.progress },
+          "Chapter already completed",
+        ),
+      );
+    }
+
+    // 4️⃣ Add completed chapter
+    lessonProgress.completedVideos.push(chapterId);
+    lessonProgress.lastVideoId = chapterId;
+
+    // 5️⃣ Calculate progress
+    const totalChapters = await Video.countDocuments({
+      lessonId,
+      status: "published",
+    });
+
+    const completedCount = lessonProgress.completedVideos.length;
+    const progress = Math.round(
+      (completedCount / totalChapters) * 100,
+    );
+
+    lessonProgress.progress = progress;
+
+    // 6️⃣ Mark lesson completed if 100%
+    if (completedCount >= totalChapters) {
+      lessonProgress.status = "completed";
+    }
+
+    await lessonProgress.save();
+
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          completed: true,
+          progress,
+          lessonCompleted: lessonProgress.status === "completed",
+        },
+        "Chapter completed",
+      ),
+    );
+  } catch (error) {
+    console.error("Complete chapter error:", error);
+    return res
+      .status(500)
+      .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
 

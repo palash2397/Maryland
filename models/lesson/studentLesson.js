@@ -41,7 +41,9 @@ const studentLessonSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.model(
+const StudentLessonProgress = mongoose.model(
   "StudentLessonProgress",
   studentLessonSchema
 );
+
+export default StudentLessonProgress;
