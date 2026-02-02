@@ -26,6 +26,11 @@ const studentLessonSchema = new mongoose.Schema(
       default: 0,
     },
 
+    rewarded: {
+      type: Boolean,
+      default: false,
+    },
+
     status: {
       type: String,
       enum: ["inProgress", "completed"],
@@ -41,7 +46,7 @@ const studentLessonSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-const StudentLessonProgress = mongoose.model(
+const StudentLessonProgress = await mongoose.model(
   "StudentLessonProgress",
   studentLessonSchema
 );

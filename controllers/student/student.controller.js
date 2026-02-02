@@ -1065,8 +1065,10 @@ export const studentDashboardHandle = async (req, res) => {
 
     // 1️⃣ Core student info
     const student = await Student.findById(studentId)
-      .select("xp level")
+      .select("firstName lastName xp level")
       .lean();
+
+    console.log("student --------->", req.user.id)
 
     // 2️⃣ Stats
     const completedLessons = await StudentLessonProgress.countDocuments({
@@ -1081,12 +1083,16 @@ export const studentDashboardHandle = async (req, res) => {
       .populate("lessonId", "title")
       .lean();
 
+    console.log("active lesson --------->", activeLesson)
+
     const activeQuest = await StudentQuest.findOne({
       studentId,
       status: "inProgress",
     })
       .populate("questId", "title questionCount")
       .lean();
+      
+    console.log("active quest --------->", activeQuest)
 
     const badgesEarned = await StudentBadge.countDocuments({
       studentId,
@@ -1096,6 +1102,7 @@ export const studentDashboardHandle = async (req, res) => {
       new ApiResponse(
         200,
         {
+          name: `${student.firstName} ${student.lastName}`,
           points: student?.xp || 0,
           level: student?.level || 1,
 

@@ -69,7 +69,7 @@ studentRouter.get("/lessons", auth, allLessonsHandle);
 studentRouter.get("/lesson/:id", auth, lessonByIdHandle);
 studentRouter.get("/lesson/chapters/:lessonId", auth, lessonChaptersHandle);
 studentRouter.get("/lesson/chapter/play/:chapterId", auth, playChapterHandle);
-studentRouter.post("/lesson/chapter/complete", auth, completeChapterHandle);
+studentRouter.post("/lesson/chapter/complete/:chapterId", auth, completeChapterHandle);
 studentRouter.get("/lesson/progress/:lessonId", auth, getLessonProgressHandle);
 studentRouter.get("/dashboard", auth, studentDashboardHandle);
 
