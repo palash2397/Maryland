@@ -9,6 +9,7 @@ import StudentBadge from "../../models/badges/studentBadges.js";
 import Quiz from "../../models/quizz/quizz.js";
 import Quest from "../../models/quest/quest.js";
 import StudentQuest from "../../models/studentQuest/studentQuest.js";
+import RewardLogs from "../../models/reward/rewardHistory.js";
 
 import Teacher from "../../models/teacher/teacher.js";
 
@@ -333,7 +334,6 @@ export const submitQuestAnswerHandle = async (req, res) => {
 
       const oldLevel = student.level || 1;
       const badges = await Badge.find({ isActive: true });
-
       const newlyUnlockedBadges = [];
 
       for (const badge of badges) {
@@ -347,27 +347,45 @@ export const submitQuestAnswerHandle = async (req, res) => {
           shouldUnlock = newLevel >= badge.conditionValue;
         }
 
-        if (shouldUnlock) {
-          const result = await StudentBadge.updateOne(
-            {
-              studentId: req.user.id,
-              badgeId: badge._id,
-            },
-            {
-              $setOnInsert: { unlockedAt: new Date() },
-            },
-            { upsert: true },
-          );
+        if (!shouldUnlock) continue;
 
-          // 🔥 Newly unlocked badge
-          if (result.upsertedCount > 0) {
-            newlyUnlockedBadges.push({
-              title: badge.title,
-              icon: badge.icon,
-            });
-          }
+        // 🔑 THIS IS THE FIX
+        const existingBadge = await StudentBadge.findOneAndUpdate(
+          {
+            studentId: req.user.id,
+            badgeId: badge._id,
+          },
+          {
+            $setOnInsert: { unlockedAt: new Date() },
+          },
+          {
+            upsert: true,
+            new: false, // 👈 critical
+          },
+        );
+
+        // If badge did NOT exist before → newly unlocked
+        if (!existingBadge) {
+          newlyUnlockedBadges.push({
+            title: badge.title,
+            icon: badge.icon,
+          });
+
+          await RewardLogs.create({
+            studentId: req.user.id,
+            type: "badge",
+            title: badge.title,
+            points: badge.rewardPoints || 0,
+          });
         }
       }
+
+      // await RewardLogs.create({
+      //   studentId: req.user.id,
+      //   type: "quest",
+      //   title: quest.title,
+      //   points: quest.rewards.xpPoints,
+      // });
 
       // ✅ Final response on completion
       return res.status(200).json(
