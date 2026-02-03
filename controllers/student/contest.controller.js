@@ -380,12 +380,12 @@ export const submitQuestAnswerHandle = async (req, res) => {
         }
       }
 
-      // await RewardLogs.create({
-      //   studentId: req.user.id,
-      //   type: "quest",
-      //   title: quest.title,
-      //   points: quest.rewards.xpPoints,
-      // });
+      await RewardLogs.create({
+        studentId: req.user.id,
+        type: "quest",
+        title: quest.title,
+        points: quest.rewards.xpPoints,
+      });
 
       // ✅ Final response on completion
       return res.status(200).json(
