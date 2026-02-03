@@ -6,12 +6,13 @@ import UserSubscription from "../../models/subcription/userSubscription.js";
 import Plan from "../../models/plan/plan.js";
 import Lesson from "../../models/lesson/lesson.js";
 import Video from "../../models/lesson/video.js";
+import ContactSettings from "../../models/contact/contactSetting.js";
 
 import { getSignedFileUrl } from "../../utils/s3SignedUrl.js";
 
 import Student from "../../models/student/student.js";
 import Teacher from "../../models/teacher/teacher.js";
-import { promiseImpl } from "ejs";
+
 
 export const allStudentHandle = async (req, res) => {
   try {
