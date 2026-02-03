@@ -62,3 +62,36 @@
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import ContactSettings from "./models/contact/contactSetting.js";
+
+dotenv.config();
+
+const data = {
+  "address": "11868 College Backbone Rd, Princess Anne, MD 21853",
+  "email": "test@mail.com",
+  "phone": "+1 410 651 8095"
+}
+
+
+
+// Ready for implementation:
+const seedData = async () => {
+  try {
+    await mongoose.connect(process.env.MONGO_URI);
+    
+    // Future implementation:
+    await ContactSettings.create({
+      address: data.address,
+      email: data.email,
+      phone: data.phone
+    });
+    
+    console.log("✅ data added successfully");
+    process.exit(0);
+  } catch (error) {
+    console.error("❌ Error adding data:", error);
+    process.exit(1);
+  }
+};
+
+
+seedData()
