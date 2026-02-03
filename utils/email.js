@@ -41,6 +41,8 @@ export const sendVerificationMail = async function (name, to, actToken, route) {
       name,
       href_url: `${process.env.BASE_URL}/${route}/verify-account/${actToken}`,
       msg: `Please click below link to activate your account.`,
+      year: new Date().getFullYear(),
+      companyName: "MathAdventure.com",
     },
   };
 
@@ -71,6 +73,8 @@ export const sendForgotPasswordMail = async function (
       name,
       href_url: `${process.env.BASE_URL}/${route}/verify-password/${actToken}`,
       msg: `Please click below link to activate your account.`,
+      year: new Date().getFullYear(),
+      companyName: "MathAdventure.com",
     },
   };
 
@@ -97,7 +101,7 @@ export const sendContactUsMail = async function (name, to, message) {
       message,
       userEmail: to,
       year: new Date().getFullYear(),
-      companyName: "YourCompany",
+      companyName: "MathAdventure.com",
     },
   };
 
