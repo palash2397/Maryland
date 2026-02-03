@@ -220,6 +220,38 @@ export const allChapterHandle = async (req, res) => {
   }
 };
 
+export const chapterHandle = async(req, res)=>{
+  try {
+    const {id} = req.params
+
+    const schema = Joi.object({
+      id: Joi.string().required(),
+    })
+    
+    const {error} = schema.validate(req.params)
+    if(error){
+      return res.status(400).json(new ApiResponse(400, {}, Msg.ID_REQUIRED))
+    }
+    
+    const chapter = await Video.findById(id)
+      .populate("lessonId", "title")
+      .populate("teacherId", "firstName lastName email avatar");
+    
+    if(!chapter){
+      return res.status(404).json(new ApiResponse(404, {}, Msg.CHAPTER_NOT_FOUND));
+    }
+
+    chapter.thumbnail = chapter.thumbnail ? await getSignedFileUrl(chapter.thumbnail) : null;
+    chapter.videoUrl = chapter.videoUrl ? await getSignedFileUrl(chapter.videoUrl) : null;
+    
+    return res.status(200).json(new ApiResponse(200, chapter, Msg.CHAPTER_FETCHED));
+    
+  } catch (error) {
+    console.log(`error while getting chapter`, error);
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+}
+
 
 export const contactSettingHandle = async(req, res)=>{
   try {
@@ -245,7 +277,7 @@ export const contactSettingHandle = async(req, res)=>{
     contactSetting.phone = phone
     await contactSetting.save()
     
-    return res.status(200).json(new ApiResponse(200, contactSetting, Msg.CONTACT_SETTING_UPDATED))
+    return res.status(200).json(new ApiResponse(200, contactSetting, Msg.C))
     
   } catch (error) {
     console.log(`error while getting contact settings`, error);

@@ -14,7 +14,8 @@ import {
   changeAccountStatusHandle,
   allLessonHandle,
   lessonHandle,
-  allChapterHandle
+  allChapterHandle,
+  chapterHandle
 } from "../controllers/admin/admin.controller.js";
 
 import {
@@ -80,5 +81,6 @@ adminRouter.get("/lesson/:id", auth, isAdmin, lessonHandle);
 
 // Chapters
 adminRouter.get("/all/chapters", auth, isAdmin, allChapterHandle);
+adminRouter.get("/chapter/:id", auth, isAdmin, chapterHandle);
 
 export default adminRouter;

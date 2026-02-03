@@ -202,7 +202,13 @@ export const Msg = {
   REWARD_ADDED: `Reward added successfully`,
 
 
-  
+  // Contact Settings
+  CONTACT_SETTINGS_FETCHED: `Contact settings fetched successfully`,
+  CONTACT_SETTING_NOT_FOUND: `Contact setting not found`,
+  CONTACT_SETTING_ERROR: `Error fetching contact setting`,
+  CONTACT_SETTING_DELETED: `Contact setting deleted successfully`,
+  CONTACT_SETTING_UPDATED: `Contact setting updated successfully`,
+  CONTACT_SETTING_ADDED: `Contact setting added successfully`,
 
 
 };
