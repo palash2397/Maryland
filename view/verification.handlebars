@@ -4,36 +4,51 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-    <title>User Verification</title>
+    <title>Account Verification</title>
   </head>
 
-  <body style="margin:0;padding:0;background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);font-family:Arial,Helvetica,sans-serif;color:#fff;text-align:center;padding:40px 20px;">
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%;padding:0;margin:0;">
+  <body style="margin:0;padding:0;background:#f6f7fb;font-family:Arial,Helvetica,sans-serif;color:#111827;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f6f7fb;padding:24px 0;width:100%;">
       <tr>
-        <td align="center">
-          <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="width:600px;max-width:600px;background:rgba(255,255,255,0.08);border-radius:16px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,0.3);">
+        <td align="center" style="padding:0 12px;">
+          <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="width:600px;max-width:600px;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e8eaf1;">
             <tr>
-              <td style="padding:40px 30px;">
-                <h2 style="margin:0 0 10px 0;font-size:24px;font-weight:700;line-height:1.2;color:#ffffff;">
-                  Hello, {{name}}
-                </h2>
+              <td style="padding:20px 24px;background:#0f172a;color:#ffffff;">
+                <div style="font-size:16px;font-weight:700;line-height:1.2;">Account Verification</div>
+                <div style="font-size:12px;opacity:.85;line-height:1.2;margin-top:4px;">Verify your account</div>
+              </td>
+            </tr>
 
-                <p style="margin:10px 0;font-size:15px;line-height:1.6;color:#dddddd;">
-                  Thank you for signing up with Maryland. Please verify your account by clicking the button below.
-                </p>
+            <tr>
+              <td style="padding:24px;">
+                <div style="font-size:14px;color:#111827;line-height:1.5;">
+                  <p style="margin:0 0 12px 0;">
+                    <strong>Hello,</strong> {{name}}
+                  </p>
 
-                <a
-                  href="{{href_url}}"
-                  style="display:inline-block;margin-top:25px;padding:12px 26px;font-size:16px;font-weight:700;text-decoration:none;border-radius:8px;background:linear-gradient(90deg,#00c6ff,#0072ff);color:#ffffff;box-shadow:0 4px 15px rgba(0,114,255,0.3);"
-                >
-                  Verify Account
-                </a>
+                  <p style="margin:0 0 16px 0;color:#374151;">
+                    Thank you for signing up with Maryland. Please verify your account by clicking the button below.
+                  </p>
 
-                <p style="margin:10px 0;font-size:15px;line-height:1.6;color:#dddddd;">
-                  If you did not create this account, you can safely ignore this email.
-                </p>
+                  <a
+                    href="{{href_url}}"
+                    style="display:inline-block;padding:12px 18px;border-radius:10px;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;"
+                    target="_blank"
+                    rel="noopener"
+                  >
+                    Verify Account
+                  </a>
 
-                <div style="margin-top:30px;font-size:12px;line-height:1.4;color:#aaaaaa;">
+                  <p style="margin:16px 0 0 0;color:#374151;">
+                    If you did not create this account, you can safely ignore this email.
+                  </p>
+                </div>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:16px 24px;background:#f9fafb;border-top:1px solid #e5e7eb;">
+                <div style="font-size:12px;color:#6b7280;line-height:1.4;">
                   &copy; {{year}} {{orgName}}. All rights reserved.
                 </div>
               </td>
