@@ -219,3 +219,36 @@ export const allChapterHandle = async (req, res) => {
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
+
+
+export const contactSettingHandle = async(req, res)=>{
+  try {
+    const {address, email, phone} = req.body
+    const schema = Joi.object({
+      address: Joi.string().required(),
+      email: Joi.string().email().required(),
+      phone: Joi.string().required(),
+    })
+    
+    const {error} = schema.validate(req.body)
+    if(error){
+      return res.status(400).json(new ApiResponse(400, {}, error.details[0].message))
+    }
+    
+    const contactSetting = await ContactSettings.findOne()
+    if(!contactSetting){
+      return res.status(404).json(new ApiResponse(404, {}, Msg.CONTACT_SETTING_NOT_FOUND))
+    }
+    
+    contactSetting.address = address
+    contactSetting.email = email
+    contactSetting.phone = phone
+    await contactSetting.save()
+    
+    return res.status(200).json(new ApiResponse(200, contactSetting, Msg.CONTACT_SETTING_UPDATED))
+    
+  } catch (error) {
+    console.log(`error while getting contact settings`, error);
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+}
