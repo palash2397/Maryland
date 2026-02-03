@@ -7,6 +7,7 @@ import Plan from "../../models/plan/plan.js";
 import Lesson from "../../models/lesson/lesson.js";
 import Video from "../../models/lesson/video.js";
 import ContactSettings from "../../models/contact/contactSetting.js";
+import ContactUs from "../../models/contact/contact.js";
 
 import { getSignedFileUrl } from "../../utils/s3SignedUrl.js";
 
@@ -273,9 +274,9 @@ export const contactSettingHandle = async(req, res)=>{
       return res.status(404).json(new ApiResponse(404, {}, Msg.CONTACT_SETTING_NOT_FOUND))
     }
     
-    contactSetting.address = address
-    contactSetting.email = email
-    contactSetting.phone = phone
+    contactSetting.address = address || contactSetting.address
+    contactSetting.email = email || contactSetting.email
+    contactSetting.phone = phone || contactSetting.phone
     await contactSetting.save()
     
     return res.status(200).json(new ApiResponse(200, contactSetting, Msg.C))
@@ -306,3 +307,17 @@ export const getContactSettingsHandle = async (req, res) => {
     );
   }
 };
+
+export const allContactUsHandle = async(req, res)=>{
+  try {
+   const data = await ContactUs.find().lean()
+   if (!data || data.length === 0) {
+    return res.status(404).json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND))
+   }
+   return res.status(200).json(new ApiResponse(200, data, Msg.CONTACT_US_FETCHED))
+    
+  } catch (error) {
+    console.log(`error while getting all contact us`, error);
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+}
