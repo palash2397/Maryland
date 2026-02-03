@@ -31,6 +31,7 @@ import {
   currentQuestQuestionHandle,
   submitQuestAnswerHandle,
   myBadgesHandle,
+  rewardsHandle,
 } from "../controllers/student/contest.controller.js";
 
 import { cancelSubscriptionHandle } from "../controllers/student/subscription.controller.js";
