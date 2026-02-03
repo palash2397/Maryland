@@ -135,4 +135,8 @@ studentRouter.get("/badges", auth, checkSubscription, myBadgesHandle);
 // Billing routes
 studentRouter.get("/billing/history", auth, userBillingHistoryHandle);
 
+
+// rewards routes
+studentRouter.get("/rewards", auth, checkSubscription, rewardsHandle);
+
 export default studentRouter;
