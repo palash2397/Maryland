@@ -285,3 +285,24 @@ export const contactSettingHandle = async(req, res)=>{
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 }
+
+
+export const getContactSettingsHandle = async (req, res) => {
+  try {
+    let settings = await ContactSettings.findOne().lean();
+
+    if (!settings) {
+      return res.status(404).json(new ApiResponse(404, {}, Msg.CONTACT_SETTING_NOT_FOUND));
+    }
+
+
+
+    return res.status(200).json(
+      new ApiResponse(200, settings, Msg.CONTACT_SETTINGS_FETCHED)
+    );
+  } catch (error) {
+    return res.status(500).json(
+      new ApiResponse(500, {}, Msg.SERVER_ERROR)
+    );
+  }
+};
