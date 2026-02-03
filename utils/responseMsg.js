@@ -64,6 +64,7 @@ export const Msg = {
   // Verification
   EMAIL_VERIFICATION_SENT: `The verification link has been successfully sent to your registered email. Please check your inbox.`,
   EMAIL_VERIFIED: `Email verified successfully`,
+  EMAIL_SENT: `Email sent successfully`,
   EMAIL_RESET_PASSWORD_LINK_SENT: `Password reset link has been sent to your email.`,
   EMAIL_ALREADY_VERIFIED: `Email already verified`,
   PHONE_VERIFIED: `Phone number verified successfully`,
