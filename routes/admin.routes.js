@@ -18,7 +18,7 @@ import {
   chapterHandle,
   contactSettingHandle,
   getContactSettingsHandle,
-
+  allContactUsHandle
 } from "../controllers/admin/admin.controller.js";
 
 import {
@@ -89,5 +89,6 @@ adminRouter.get("/chapter/:id", auth, isAdmin, chapterHandle);
 // Contact Settings
 adminRouter.put("/contact/setting", auth, isAdmin, contactSettingHandle);
 adminRouter.get("/contact/setting", getContactSettingsHandle);
+adminRouter.get("/contact/all", auth, isAdmin, allContactUsHandle)
 
 export default adminRouter;
