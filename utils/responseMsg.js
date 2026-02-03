@@ -192,4 +192,13 @@ export const Msg = {
   BILLING_HISTORY_ADDED: `Billing history added successfully`,
 
 
+  // Rewards
+  REWARDS_FETCHED: `Rewards fetched successfully`,
+  REWARD_NOT_FOUND: `Reward not found`,
+  REWARD_ERROR: `Error fetching reward`,
+  REWARD_DELETED: `Reward deleted successfully`,
+  REWARD_UPDATED: `Reward updated successfully`,
+  REWARD_ADDED: `Reward added successfully`,
+
+
 };
