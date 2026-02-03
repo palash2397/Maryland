@@ -512,7 +512,7 @@ export const rewardsHandle = async (req, res) => {
           achievements,
           rewards: rewardHistory,
         },
-        "Student rewards fetched",
+        Msg.REWARDS_FETCHED,
       ),
     );
   } catch (error) {
