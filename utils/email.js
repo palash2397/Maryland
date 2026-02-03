@@ -83,7 +83,7 @@ export const sendForgotPasswordMail = async function (name, to, actToken, route)
 };
 
 
-export const sendContactUsMaile = async function (name, to, message) {
+export const sendContactUsMail = async function (name, to, message) {
     let mailOptions = {
         from: process.env.SMTP_USER, // sender address
         to: to,
