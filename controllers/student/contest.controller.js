@@ -457,3 +457,66 @@ export const myBadgesHandle = async (req, res) => {
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
+
+export const rewardsHandle = async (req, res) => {
+  try {
+    const studentId = req.user.id;
+    const LEVEL_XP = 100;
+
+    // 1️⃣ Student basic info
+    const student = await Student.findById(studentId)
+      .select("xp level")
+      .lean();
+
+    const xp = student?.xp || 0;
+    const level = student?.level || 1;
+
+    const currentLevelXp = xp % LEVEL_XP;
+    const xpToNextLevel = LEVEL_XP - currentLevelXp;
+
+    // 2️⃣ Achievements (badges)
+    const badges = await StudentBadge.find({ studentId })
+      .populate("badgeId", "title icon description")
+      .sort({ unlockedAt: -1 })
+      .lean();
+
+    const achievements = badges.map((b) => ({
+      title: b.badgeId.title,
+      icon: b.badgeId.icon,
+      description: b.badgeId.description,
+      unlockedAt: b.unlockedAt,
+    }));
+
+    // 3️⃣ Rewards history
+    const rewards = await RewardLogs.find({ studentId })
+      .sort({ createdAt: -1 })
+      .limit(20)
+      .lean();
+
+    const rewardHistory = rewards.map((r) => ({
+      date: r.createdAt,
+      title: r.title,
+      points: r.points,
+      type: r.type,
+    }));
+
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          levelProgress: {
+            level,
+            currentXp: currentLevelXp,
+            xpToNextLevel,
+          },
+          achievements,
+          rewards: rewardHistory,
+        },
+        "Student rewards fetched",
+      ),
+    );
+  } catch (error) {
+    console.error("Student rewards error:", error);
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+};
