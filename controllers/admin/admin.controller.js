@@ -258,9 +258,9 @@ export const contactSettingHandle = async(req, res)=>{
   try {
     const {address, email, phone} = req.body
     const schema = Joi.object({
-      address: Joi.string().required(),
-      email: Joi.string().email().required(),
-      phone: Joi.string().required(),
+      address: Joi.string().optional(),
+      email: Joi.string().email().optional(),
+      phone: Joi.string().optional(),
     })
     
     const {error} = schema.validate(req.body)

@@ -15,7 +15,8 @@ import {
   allLessonHandle,
   lessonHandle,
   allChapterHandle,
-  chapterHandle
+  chapterHandle,
+  contactSettingHandle
 } from "../controllers/admin/admin.controller.js";
 
 import {
@@ -82,5 +83,8 @@ adminRouter.get("/lesson/:id", auth, isAdmin, lessonHandle);
 // Chapters
 adminRouter.get("/all/chapters", auth, isAdmin, allChapterHandle);
 adminRouter.get("/chapter/:id", auth, isAdmin, chapterHandle);
+
+// Contact Settings
+adminRouter.put("/contact/settings", auth, isAdmin, contactSettingHandle);
 
 export default adminRouter;
