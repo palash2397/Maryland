@@ -243,6 +243,7 @@ export const chapterHandle = async(req, res)=>{
 
     chapter.thumbnail = chapter.thumbnail ? await getSignedFileUrl(chapter.thumbnail) : null;
     chapter.videoUrl = chapter.videoUrl ? await getSignedFileUrl(chapter.videoUrl) : null;
+    chapter.teacherId.avatar = chapter.teacherId.avatar ? await getSignedFileUrl(chapter.teacherId.avatar) : `${process.env.DEFAULT_PROFILE_PIC}`;
     
     return res.status(200).json(new ApiResponse(200, chapter, Msg.CHAPTER_FETCHED));
     
