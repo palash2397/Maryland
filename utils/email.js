@@ -32,6 +32,8 @@ const handlebarOptions = {
 transporter.use("compile", hbs(handlebarOptions));
 
 export const sendVerificationMail = async function (name, to, actToken, route) {
+  console.log("email", process.env.SMTP_USER);
+  console.log("email", process.env.SMTP_PASS);
   let mailOptions = {
     from: process.env.SMTP_USER, // sender address
     to: to,

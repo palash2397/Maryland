@@ -56,7 +56,6 @@ adminRouter.patch("/teacher/:id", auth, isAdmin, teacherAccountStatusHandle);
 // CONTEST DASHBOARD
 adminRouter.get("/contest/dashboard", auth, isAdmin, contestDashboardHandle);
 
-
 // SUBSCRIPTION ANALYTICS
 adminRouter.get(
   "/subscription/analytics",
