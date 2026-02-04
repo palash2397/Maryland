@@ -18,7 +18,9 @@ const userSubscriptionSchema = new mongoose.Schema(
     planId:{
       type: mongoose.Schema.Types.ObjectId,
       ref: "Plan",
-      required: true,
+      required: function(){
+        return this.plan !== "free";
+      },
     },
 
     status: {
