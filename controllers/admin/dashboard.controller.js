@@ -196,116 +196,125 @@ export const subscriptionAnalyticsHandle = async (req, res) => {
 
 export const adminDashboardHandle = async (req, res) => {
   try {
-    const { startOfThisMonth, startOfLastMonth, endOfLastMonth } = getMonthRanges();
+    const {
+      startOfThisMonth,
+      startOfLastMonth,
+      endOfLastMonth,
+    } = getMonthRanges();
 
     /* =======================
-       STUDENTS (TOTAL + MONTHLY NEW + GROWTH)
+       ACTIVE STUDENTS
     ======================== */
-    const totalStudents = await Student.countDocuments({});
-    const newStudentsThisMonth = await Student.countDocuments({
-      createdAt: { $gte: startOfThisMonth },
-    });
-    const newStudentsLastMonth = await Student.countDocuments({
-      createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth },
-    });
-    const studentsGrowth = calculateGrowth(newStudentsThisMonth, newStudentsLastMonth);
+    const totalStudents = await Student.countDocuments({ });
 
-    /* =======================
-       ACTIVE STUDENTS (TOTAL + MONTHLY NEW ACTIVE + GROWTH)
-       If you want "active" by isActive flag only, totals are isActive:true
-       Growth uses "new active students created this month vs last month"
-    ======================== */
-    const totalActiveStudents = await Student.countDocuments({ isActive: true });
-    const newActiveStudentsThisMonth = await Student.countDocuments({
-      isActive: true,
+    const studentsThisMonth = await Student.countDocuments({
       createdAt: { $gte: startOfThisMonth },
     });
-    const newActiveStudentsLastMonth = await Student.countDocuments({
-      isActive: true,
+
+    const studentsLastMonth = await Student.countDocuments({
       createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth },
     });
-    const activeStudentsGrowth = calculateGrowth(
-      newActiveStudentsThisMonth,
-      newActiveStudentsLastMonth
+
+    const studentGrowth = calculateGrowth(
+      studentsThisMonth,
+      studentsLastMonth,
     );
 
     /* =======================
-       TEACHERS (TOTAL + MONTHLY NEW + GROWTH)
+       TOTAL TEACHERS
     ======================== */
-    const totalTeachers = await Teacher.countDocuments({});
-    const newTeachersThisMonth = await Teacher.countDocuments({
+    const totalTeachers = await Teacher.countDocuments({ isActive: true });
+
+    const teachersThisMonth = await Teacher.countDocuments({
       createdAt: { $gte: startOfThisMonth },
     });
-    const newTeachersLastMonth = await Teacher.countDocuments({
+
+    const teachersLastMonth = await Teacher.countDocuments({
       createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth },
     });
-    const teachersGrowth = calculateGrowth(newTeachersThisMonth, newTeachersLastMonth);
+
+    const teacherGrowth = calculateGrowth(
+      teachersThisMonth,
+      teachersLastMonth,
+    );
 
     /* =======================
-       LESSONS (TOTAL + MONTHLY NEW + GROWTH)
+       QUESTS COMPLETED
     ======================== */
-    const totalLessons = await Lesson.countDocuments({});
-    const newLessonsThisMonth = await Lesson.countDocuments({
-      createdAt: { $gte: startOfThisMonth },
+    const totalQuestsCompleted = await StudentQuest.countDocuments({
+      status: "completed",
     });
-    const newLessonsLastMonth = await Lesson.countDocuments({
-      createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth },
-    });
-    const lessonsGrowth = calculateGrowth(newLessonsThisMonth, newLessonsLastMonth);
 
-    /* =======================
-       QUESTS COMPLETED (TOTAL COMPLETED ALL TIME + MONTHLY COMPLETED + GROWTH)
-    ======================== */
-    const totalQuestsCompleted = await StudentQuest.countDocuments({ status: "completed" });
-
-    const questsCompletedThisMonth = await StudentQuest.countDocuments({
+    const questsThisMonth = await StudentQuest.countDocuments({
       status: "completed",
       completedAt: { $gte: startOfThisMonth },
     });
 
-    const questsCompletedLastMonth = await StudentQuest.countDocuments({
+    const questsLastMonth = await StudentQuest.countDocuments({
       status: "completed",
       completedAt: { $gte: startOfLastMonth, $lte: endOfLastMonth },
     });
 
-    const questsGrowth = calculateGrowth(questsCompletedThisMonth, questsCompletedLastMonth);
+    const questGrowth = calculateGrowth(
+      questsThisMonth,
+      questsLastMonth,
+    );
 
+    /* =======================
+       TOTAL LESSONS
+    ======================== */
+    const totalLessons = await Lesson.countDocuments({
+      status: "published",
+    });
+
+    const lessonsThisMonth = await Lesson.countDocuments({
+      status: "published",
+      createdAt: { $gte: startOfThisMonth },
+    });
+
+    const lessonsLastMonth = await Lesson.countDocuments({
+      status: "published",
+      createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth },
+    });
+
+    const lessonGrowth = calculateGrowth(
+      lessonsThisMonth,
+      lessonsLastMonth,
+    );
+
+    /* =======================
+       RESPONSE
+    ======================== */
     return res.status(200).json(
       new ApiResponse(
         200,
         {
-          students: {
-            total: totalStudents,
-            month: newStudentsThisMonth,
-            growth: studentsGrowth,
-          },
           activeStudents: {
-            total: totalActiveStudents,
-            month: newActiveStudentsThisMonth,
-            growth: activeStudentsGrowth,
+            total: totalStudents,
+            growth: studentGrowth,
           },
-          teachers: {
+          totalTeachers: {
             total: totalTeachers,
-            month: newTeachersThisMonth,
-            growth: teachersGrowth,
-          },
-          lessons: {
-            total: totalLessons,
-            month: newLessonsThisMonth,
-            growth: lessonsGrowth,
+            growth: teacherGrowth,
           },
           questsCompleted: {
             total: totalQuestsCompleted,
-            month: questsCompletedThisMonth,
-            growth: questsGrowth,
+            growth: questGrowth,
+          },
+          totalLessons: {
+            total: totalLessons,
+            growth: lessonGrowth,
           },
         },
-        Msg.DATA_FETCHED
-      )
+        Msg.DATA_FETCHED,
+      ),
     );
   } catch (error) {
     console.error("Admin dashboard error:", error);
-    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+    return res.status(500).json(
+      new ApiResponse(500, {}, Msg.SERVER_ERROR),
+    );
   }
 };
+
 
