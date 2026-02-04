@@ -321,3 +321,12 @@ export const allContactUsHandle = async(req, res)=>{
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 }
+
+export const contactHandle = async(req,res)=>{
+  try {
+    
+  } catch (error) {
+    console.log(`error while handling contact`, error);
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+}
