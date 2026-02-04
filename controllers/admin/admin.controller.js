@@ -324,6 +324,22 @@ export const allContactUsHandle = async(req, res)=>{
 
 export const contactHandle = async(req,res)=>{
   try {
+    const { id } = req.params
+    const schema = Joi.object({
+      id: Joi.string().required(),
+    })
+    
+    const {error} = schema.validate(req.params)
+    if(error){
+      return res.status(400).json(new ApiResponse(400, {}, Msg.ID_REQUIRED))
+    }
+    
+    const contact = await ContactUs.findById(id)
+    if(!contact){
+      return res.status(404).json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND))
+    }
+    
+    return res.status(200).json(new ApiResponse(200, contact, Msg.CONTACT_FETCHED))
     
   } catch (error) {
     console.log(`error while handling contact`, error);
