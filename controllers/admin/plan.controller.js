@@ -269,7 +269,9 @@ export const adminBillingHistoryHandle = async (req, res) => {
 export const billHandle = async (req, res) => {
   try {
     const { id } = req.params;
-    const bill = await BillingHistory.findById(id);
+    const bill = await BillingHistory.findById(id)
+      .populate("userId", "firstName lastName email avatar")
+      .populate("planId", "name");
     if (!bill) {
       return res.status(404).json(new ApiResponse(404, {}, Msg.BILLING_HISTORY_NOT_FOUND));
     }
