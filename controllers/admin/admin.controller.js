@@ -351,7 +351,9 @@ export const contactHandle = async(req,res)=>{
 export const allQuestHandle = async(req, res)=>{
   try {
     const data = await Quest.find()
-                .populate(`teacherId name email`).lean()
+               .populate({ path: "teacherId", select: "firstName lastName email" })
+               .populate({ path: "lessonId", select: "title " })
+               .lean()
     if (!data || data.length === 0) {
       return res.status(404).json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND))
     }
