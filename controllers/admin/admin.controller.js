@@ -346,3 +346,17 @@ export const contactHandle = async(req,res)=>{
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 }
+
+export const allQuestHandle = async(req, res)=>{
+  try {
+    const data = await Question.find().lean()
+    if (!data || data.length === 0) {
+      return res.status(404).json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND))
+    }
+    return res.status(200).json(new ApiResponse(200, data, Msg.QUESTIONS_FETCHED))
+    
+  } catch (error) {
+    console.log(`error while getting all questions`, error);
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+}
