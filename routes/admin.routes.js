@@ -20,7 +20,8 @@ import {
   contactSettingHandle,
   getContactSettingsHandle,
   allContactUsHandle,
-  contactHandle
+  contactHandle,
+  allQuestHandle
 } from "../controllers/admin/admin.controller.js";
 
 import {
@@ -95,5 +96,8 @@ adminRouter.put("/contact/setting", auth, isAdmin, contactSettingHandle);
 adminRouter.get("/contact/setting", getContactSettingsHandle);
 adminRouter.get("/contact/all", auth, isAdmin, allContactUsHandle)
 adminRouter.get("/contact/:id", auth, isAdmin, contactHandle)
+
+// Quests
+adminRouter.get("/all/quests", auth, isAdmin, allQuestHandle)
 
 export default adminRouter;
