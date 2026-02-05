@@ -350,9 +350,15 @@ export const contactHandle = async(req,res)=>{
 
 export const allQuestHandle = async(req, res)=>{
   try {
-    const data = await Quest.find().lean()
+    const data = await Quest.find()
+                .populate(`teacherId name email`).lean()
     if (!data || data.length === 0) {
       return res.status(404).json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND))
+    }
+
+    for (const item of data) {
+      item.thumbnail = item.thumbnail ? await getSignedFileUrl(item.thumbnail) : null
+      
     }
     return res.status(200).json(new ApiResponse(200, data, Msg.QUESTIONS_FETCHED))
     
