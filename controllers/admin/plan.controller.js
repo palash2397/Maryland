@@ -265,3 +265,17 @@ export const adminBillingHistoryHandle = async (req, res) => {
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
+
+export const billHandle = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const bill = await BillingHistory.findById(id);
+    if (!bill) {
+      return res.status(404).json(new ApiResponse(404, {}, Msg.BILLING_HISTORY_NOT_FOUND));
+    }
+    return res.status(200).json(new ApiResponse(200, bill, Msg.BILLING_HISTORY_FETCHED));
+  } catch (error) {
+    console.error("Billing history error:", error);
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+};
