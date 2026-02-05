@@ -350,7 +350,7 @@ export const contactHandle = async(req,res)=>{
 
 export const allQuestHandle = async(req, res)=>{
   try {
-    const data = await Question.find().lean()
+    const data = await Quest.find().lean()
     if (!data || data.length === 0) {
       return res.status(404).json(new ApiResponse(404, {}, Msg.DATA_NOT_FOUND))
     }
