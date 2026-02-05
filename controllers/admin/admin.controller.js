@@ -8,6 +8,7 @@ import Lesson from "../../models/lesson/lesson.js";
 import Video from "../../models/lesson/video.js";
 import ContactSettings from "../../models/contact/contactSetting.js";
 import ContactUs from "../../models/contact/contact.js";
+import Quest from "../../models/quest/quest.js";
 
 import { getSignedFileUrl } from "../../utils/s3SignedUrl.js";
 
