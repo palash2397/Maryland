@@ -275,6 +275,8 @@ export const billHandle = async (req, res) => {
     if (!bill) {
       return res.status(404).json(new ApiResponse(404, {}, Msg.BILLING_HISTORY_NOT_FOUND));
     }
+
+    bill.userId.avatar = bill.userId.avatar ? await getSignedFileUrl(bill.userId.avatar) : `${process.env.DEFAULT_PROFILE_PIC}`;
     return res.status(200).json(new ApiResponse(200, bill, Msg.BILLING_HISTORY_FETCHED));
   } catch (error) {
     console.error("Billing history error:", error);
