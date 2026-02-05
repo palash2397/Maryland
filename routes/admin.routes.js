@@ -5,7 +5,8 @@ import {
   updatePlanHandle,
   getPlansHandle,
   getPlanHandle,
-  adminBillingHistoryHandle
+  adminBillingHistoryHandle,
+  billHandle
 } from "../controllers/admin/plan.controller.js";
 
 import {
@@ -73,6 +74,9 @@ adminRouter.get(
   isAdmin,
   adminBillingHistoryHandle
 );
+
+
+adminRouter.get("/billing/history/:id", auth, isAdmin, billHandle);
 
 // ADMIN DASHBOARD
 adminRouter.get("/dashboard/analytics", auth, isAdmin, adminDashboardHandle);
