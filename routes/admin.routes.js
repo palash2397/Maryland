@@ -21,8 +21,7 @@ import {
   getContactSettingsHandle,
   allContactUsHandle,
   contactHandle,
-  allQuestHandle,
-  learningProgressStatsHandle
+  allQuestHandle
 } from "../controllers/admin/admin.controller.js";
 
 import {
@@ -34,7 +33,8 @@ import {
 import {
   contestDashboardHandle,
   subscriptionAnalyticsHandle,
-  adminDashboardHandle
+  adminDashboardHandle,
+  learningProgressStatsHandle
 } from "../controllers/admin/dashboard.controller.js";
 
 import { auth, isAdmin } from "../middlewares/auth.js";
