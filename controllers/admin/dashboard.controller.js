@@ -4,6 +4,7 @@ import { ApiResponse } from "../../utils/ApiResponse.js";
 import { Msg } from "../../utils/responseMsg.js";
 
 import Student from "../../models/student/student.js";
+import StudentLessonProgress from "../../models/lesson/studentLesson.js";
 import Teacher from "../../models/teacher/teacher.js";
 import Lesson from "../../models/lesson/lesson.js";
 import Quest from "../../models/quest/quest.js";
