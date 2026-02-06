@@ -285,8 +285,9 @@ export const learningProgressStatsHandle = async (req, res) => {
     const [totalStudents, totalLessons, progressAgg] = await Promise.all([
       Student.countDocuments({ role: "student" }),
       Lesson.countDocuments({ status: "published" }),
+
       StudentLessonProgress.aggregate([
-        // only valid lesson progress for published lessons + real students
+        // keep only published lessons
         {
           $lookup: {
             from: Lesson.collection.name,
@@ -298,6 +299,7 @@ export const learningProgressStatsHandle = async (req, res) => {
         { $unwind: "$lesson" },
         { $match: { "lesson.status": "published" } },
 
+        // keep only real students
         {
           $lookup: {
             from: Student.collection.name,
@@ -309,58 +311,39 @@ export const learningProgressStatsHandle = async (req, res) => {
         { $unwind: "$student" },
         { $match: { "student.role": "student" } },
 
-        // de-dupe: one record per (studentId, lessonId)
+        // one doc per (studentId, lessonId)
         {
           $group: {
             _id: { studentId: "$studentId", lessonId: "$lessonId" },
-            status: { $last: "$status" },
+            status: { $last: "$status" }, // "inProgress" | "completed"
           },
         },
 
         // count by status
-        {
-          $group: {
-            _id: "$status",
-            count: { $sum: 1 },
-          },
-        },
+        { $group: { _id: "$status", count: { $sum: 1 } } },
       ]),
     ]);
 
     const totalPairs = totalStudents * totalLessons;
 
-    const completedPairs =
+    const completed =
       progressAgg.find((x) => x._id === "completed")?.count || 0;
 
-    const inProgressPairs =
+    const inProgress =
       progressAgg.find((x) => x._id === "inProgress")?.count || 0;
 
-    const startedPairs = completedPairs + inProgressPairs;
-    const notStartedPairs = Math.max(0, totalPairs - startedPairs);
-
-    const toPct = (v) => (totalPairs === 0 ? 0 : Math.round((v / totalPairs) * 100));
+    const notStarted = Math.max(0, totalPairs - (completed + inProgress));
 
     return res.status(200).json(
       new ApiResponse(
         200,
-        {
-          totals: { totalStudents, totalLessons, totalPairs },
-          counts: {
-            completed: completedPairs,
-            inProgress: inProgressPairs,
-            notStarted: notStartedPairs,
-          },
-          percentages: {
-            completed: toPct(completedPairs),
-            inProgress: toPct(inProgressPairs),
-            notStarted: toPct(notStartedPairs),
-          },
-        },
-        Msg.DATA_FETCHED,
-      ),
+        { completed, inProgress, notStarted },
+        Msg.DATA_FETCHED
+      )
     );
   } catch (error) {
     console.error("Learning progress stats error:", error);
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
+
