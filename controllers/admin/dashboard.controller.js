@@ -280,61 +280,81 @@ export const adminDashboardHandle = async (req, res) => {
 };
 
 
-export const learningProgressStatsHandle = async (req, res) => {
+export const adminLearningProgressChartHandle = async (req, res) => {
   try {
-    const studentId = new mongoose.Types.ObjectId(req.user.id);
-
-    const [totalLessons, agg] = await Promise.all([
+    const [totalStudents, totalLessons, progressAgg] = await Promise.all([
+      Student.countDocuments({ role: "student" }),
       Lesson.countDocuments({ status: "published" }),
       StudentLessonProgress.aggregate([
-        { $match: { studentId } },
+        // only valid lesson progress for published lessons + real students
+        {
+          $lookup: {
+            from: Lesson.collection.name,
+            localField: "lessonId",
+            foreignField: "_id",
+            as: "lesson",
+          },
+        },
+        { $unwind: "$lesson" },
+        { $match: { "lesson.status": "published" } },
 
-        // de-dupe by lessonId; if any record says completed => completed
+        {
+          $lookup: {
+            from: Student.collection.name,
+            localField: "studentId",
+            foreignField: "_id",
+            as: "student",
+          },
+        },
+        { $unwind: "$student" },
+        { $match: { "student.role": "student" } },
+
+        // de-dupe: one record per (studentId, lessonId)
         {
           $group: {
-            _id: "$lessonId",
-            completed: {
-              $max: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] },
-            },
-            inProgress: {
-              $max: { $cond: [{ $eq: ["$status", "inProgress"] }, 1, 0] },
-            },
+            _id: { studentId: "$studentId", lessonId: "$lessonId" },
+            status: { $last: "$status" },
           },
         },
 
+        // count by status
         {
           $group: {
-            _id: null,
-            completed: { $sum: "$completed" },
-            inProgress: {
-              $sum: {
-                $cond: [
-                  { $and: [{ $eq: ["$completed", 0] }, { $eq: ["$inProgress", 1] }] },
-                  1,
-                  0,
-                ],
-              },
-            },
-            started: { $sum: 1 },
+            _id: "$status",
+            count: { $sum: 1 },
           },
         },
       ]),
     ]);
 
-    const completed = agg?.[0]?.completed || 0;
-    const inProgress = agg?.[0]?.inProgress || 0;
-    const started = agg?.[0]?.started || 0;
+    const totalPairs = totalStudents * totalLessons;
 
-    const notStarted = Math.max(0, totalLessons - started);
+    const completedPairs =
+      progressAgg.find((x) => x._id === "completed")?.count || 0;
+
+    const inProgressPairs =
+      progressAgg.find((x) => x._id === "inProgress")?.count || 0;
+
+    const startedPairs = completedPairs + inProgressPairs;
+    const notStartedPairs = Math.max(0, totalPairs - startedPairs);
+
+    const toPct = (v) => (totalPairs === 0 ? 0 : Math.round((v / totalPairs) * 100));
 
     return res.status(200).json(
       new ApiResponse(
         200,
         {
-          totalLessons,
-          completed,
-          inProgress,
-          notStarted,
+          totals: { totalStudents, totalLessons, totalPairs },
+          counts: {
+            completed: completedPairs,
+            inProgress: inProgressPairs,
+            notStarted: notStartedPairs,
+          },
+          percentages: {
+            completed: toPct(completedPairs),
+            inProgress: toPct(inProgressPairs),
+            notStarted: toPct(notStartedPairs),
+          },
         },
         Msg.DATA_FETCHED,
       ),
@@ -344,4 +364,3 @@ export const learningProgressStatsHandle = async (req, res) => {
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
-
