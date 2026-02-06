@@ -13,8 +13,6 @@ import UserSubscription from "../../models/subcription/userSubscription.js";
 import Plan from "../../models/plan/plan.js";
 import { getMonthRanges, calculateGrowth } from "../../utils/helper.js";
 
-
-
 export const contestDashboardHandle = async (req, res) => {
   try {
     // ======================
@@ -39,23 +37,18 @@ export const contestDashboardHandle = async (req, res) => {
     // ======================
     // 🎯 QUEST ENGAGEMENT
     // ======================
-    const [
-      totalAttempts,
-      completedAttempts,
-      avgScoreResult,
-    ] = await Promise.all([
-      StudentQuest.countDocuments(),
-      StudentQuest.countDocuments({ status: "completed" }),
-      StudentQuest.aggregate([
-        { $match: { status: "completed" } },
-        { $group: { _id: null, avgScore: { $avg: "$score" } } },
-      ]),
-    ]);
+    const [totalAttempts, completedAttempts, avgScoreResult] =
+      await Promise.all([
+        StudentQuest.countDocuments(),
+        StudentQuest.countDocuments({ status: "completed" }),
+        StudentQuest.aggregate([
+          { $match: { status: "completed" } },
+          { $group: { _id: null, avgScore: { $avg: "$score" } } },
+        ]),
+      ]);
 
     const averageQuestScore =
-      avgScoreResult.length > 0
-        ? Math.round(avgScoreResult[0].avgScore)
-        : 0;
+      avgScoreResult.length > 0 ? Math.round(avgScoreResult[0].avgScore) : 0;
 
     // ======================
     // 🏆 TOP STUDENTS
@@ -99,51 +92,50 @@ export const contestDashboardHandle = async (req, res) => {
           },
           topStudents,
         },
-        "Admin dashboard data fetched"
-      )
+        "Admin dashboard data fetched",
+      ),
     );
   } catch (error) {
     console.error("Admin dashboard error:", error);
-    return res
-      .status(500)
-      .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
-
 
 export const subscriptionAnalyticsHandle = async (req, res) => {
   try {
     // ======================
     // 📦 SUBSCRIPTION COUNTS
     // ======================
-    const [
-      totalSubscriptions,
-      activeSubscriptions,
-      cancelledSubscriptions,
-    ] = await Promise.all([
-      UserSubscription.countDocuments(),
-      UserSubscription.countDocuments({ status: "active" }),
-      UserSubscription.countDocuments({ status: "cancelled" }),
-    ]);
+    const [totalSubscriptions, activeSubscriptions, cancelledSubscriptions] =
+      await Promise.all([
+        UserSubscription.countDocuments(),
+        UserSubscription.countDocuments({ status: "active" }),
+        UserSubscription.countDocuments({ status: "cancelled" }),
+      ]);
 
     // ======================
     // 💵 REVENUE BY PLAN
     // ======================
-    const revenueByPlan = await UserSubscription.aggregate([
-      {
-        $match: { status: "active" },
-      },
+    const revenueByPlan = await BillingHistory.aggregate([
+      { $match: { status: "paid" } },
       {
         $group: {
           _id: "$planId",
-          totalUsers: { $sum: 1 },
-          totalRevenue: { $sum: "$amount" },
+          totalUsers: { $addToSet: "$userId" }, // unique payers
+          totalRevenue: { $sum: "$amount" }, // cents
+        },
+      },
+      {
+        $project: {
+          planId: "$_id",
+          totalUsers: { $size: "$totalUsers" },
+          totalRevenue: 1,
         },
       },
       {
         $lookup: {
           from: "plans",
-          localField: "_id",
+          localField: "planId",
           foreignField: "_id",
           as: "plan",
         },
@@ -154,17 +146,14 @@ export const subscriptionAnalyticsHandle = async (req, res) => {
           planName: "$plan.name",
           price: "$plan.price",
           totalUsers: 1,
-          totalRevenue: 1,
+          totalRevenue: 1, // cents
         },
       },
     ]);
 
-    // ======================
-    // 💰 TOTAL REVENUE
-    // ======================
     const totalRevenue = revenueByPlan.reduce(
       (sum, p) => sum + p.totalRevenue,
-      0
+      0,
     );
 
     return res.status(200).json(
@@ -181,31 +170,24 @@ export const subscriptionAnalyticsHandle = async (req, res) => {
             revenueByPlan,
           },
         },
-        Msg.SUBSCRIPTION_FETCHED
-      )
+        Msg.SUBSCRIPTION_FETCHED,
+      ),
     );
   } catch (error) {
     console.error("Subscription analytics error:", error);
-    return res
-      .status(500)
-      .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
 
-
-
 export const adminDashboardHandle = async (req, res) => {
   try {
-    const {
-      startOfThisMonth,
-      startOfLastMonth,
-      endOfLastMonth,
-    } = getMonthRanges();
+    const { startOfThisMonth, startOfLastMonth, endOfLastMonth } =
+      getMonthRanges();
 
     /* =======================
        ACTIVE STUDENTS
     ======================== */
-    const totalStudents = await Student.countDocuments({ });
+    const totalStudents = await Student.countDocuments({});
 
     const studentsThisMonth = await Student.countDocuments({
       createdAt: { $gte: startOfThisMonth },
@@ -215,10 +197,7 @@ export const adminDashboardHandle = async (req, res) => {
       createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth },
     });
 
-    const studentGrowth = calculateGrowth(
-      studentsThisMonth,
-      studentsLastMonth,
-    );
+    const studentGrowth = calculateGrowth(studentsThisMonth, studentsLastMonth);
 
     /* =======================
        TOTAL TEACHERS
@@ -233,10 +212,7 @@ export const adminDashboardHandle = async (req, res) => {
       createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth },
     });
 
-    const teacherGrowth = calculateGrowth(
-      teachersThisMonth,
-      teachersLastMonth,
-    );
+    const teacherGrowth = calculateGrowth(teachersThisMonth, teachersLastMonth);
 
     /* =======================
        QUESTS COMPLETED
@@ -255,10 +231,7 @@ export const adminDashboardHandle = async (req, res) => {
       completedAt: { $gte: startOfLastMonth, $lte: endOfLastMonth },
     });
 
-    const questGrowth = calculateGrowth(
-      questsThisMonth,
-      questsLastMonth,
-    );
+    const questGrowth = calculateGrowth(questsThisMonth, questsLastMonth);
 
     /* =======================
        TOTAL LESSONS
@@ -277,10 +250,7 @@ export const adminDashboardHandle = async (req, res) => {
       createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth },
     });
 
-    const lessonGrowth = calculateGrowth(
-      lessonsThisMonth,
-      lessonsLastMonth,
-    );
+    const lessonGrowth = calculateGrowth(lessonsThisMonth, lessonsLastMonth);
 
     /* =======================
        RESPONSE
@@ -311,10 +281,6 @@ export const adminDashboardHandle = async (req, res) => {
     );
   } catch (error) {
     console.error("Admin dashboard error:", error);
-    return res.status(500).json(
-      new ApiResponse(500, {}, Msg.SERVER_ERROR),
-    );
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
-
-
