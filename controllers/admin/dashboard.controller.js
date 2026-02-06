@@ -1,4 +1,4 @@
-import Joi from "joi";
+import mongoose from "mongoose";
 
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { Msg } from "../../utils/responseMsg.js";
@@ -277,3 +277,70 @@ export const adminDashboardHandle = async (req, res) => {
     return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
+
+
+export const learningProgressStatsHandle = async (req, res) => {
+  try {
+    const studentId = new mongoose.Types.ObjectId(req.user.id);
+
+    const [totalLessons, agg] = await Promise.all([
+      Lesson.countDocuments({ status: "published" }),
+      StudentLessonProgress.aggregate([
+        { $match: { studentId } },
+
+        // de-dupe by lessonId; if any record says completed => completed
+        {
+          $group: {
+            _id: "$lessonId",
+            completed: {
+              $max: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] },
+            },
+            inProgress: {
+              $max: { $cond: [{ $eq: ["$status", "inProgress"] }, 1, 0] },
+            },
+          },
+        },
+
+        {
+          $group: {
+            _id: null,
+            completed: { $sum: "$completed" },
+            inProgress: {
+              $sum: {
+                $cond: [
+                  { $and: [{ $eq: ["$completed", 0] }, { $eq: ["$inProgress", 1] }] },
+                  1,
+                  0,
+                ],
+              },
+            },
+            started: { $sum: 1 },
+          },
+        },
+      ]),
+    ]);
+
+    const completed = agg?.[0]?.completed || 0;
+    const inProgress = agg?.[0]?.inProgress || 0;
+    const started = agg?.[0]?.started || 0;
+
+    const notStarted = Math.max(0, totalLessons - started);
+
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          totalLessons,
+          completed,
+          inProgress,
+          notStarted,
+        },
+        Msg.DATA_FETCHED,
+      ),
+    );
+  } catch (error) {
+    console.error("Learning progress stats error:", error);
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+  }
+};
+
