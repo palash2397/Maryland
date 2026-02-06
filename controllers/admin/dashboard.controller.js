@@ -10,6 +10,7 @@ import Quest from "../../models/quest/quest.js";
 import Quiz from "../../models/quizz/quizz.js";
 import StudentQuest from "../../models/studentQuest/studentQuest.js";
 import UserSubscription from "../../models/subcription/userSubscription.js";
+import BillingHistory from "../../models/billing/billingHistory.js";
 import Plan from "../../models/plan/plan.js";
 import { getMonthRanges, calculateGrowth } from "../../utils/helper.js";
 
