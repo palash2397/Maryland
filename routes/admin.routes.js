@@ -21,7 +21,8 @@ import {
   getContactSettingsHandle,
   allContactUsHandle,
   contactHandle,
-  allQuestHandle
+  allQuestHandle,
+  learningProgressStatsHandle
 } from "../controllers/admin/admin.controller.js";
 
 import {
@@ -99,5 +100,8 @@ adminRouter.get("/contact/:id", auth, isAdmin, contactHandle)
 
 // Quests
 adminRouter.get("/all/quests", auth, isAdmin, allQuestHandle)
+
+// Student Progress
+adminRouter.get("/student/progress/chart", auth, isAdmin, learningProgressStatsHandle)
 
 export default adminRouter;
