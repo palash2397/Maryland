@@ -279,7 +279,6 @@ export const adminDashboardHandle = async (req, res) => {
   }
 };
 
-
 export const learningProgressStatsHandle = async (req, res) => {
   try {
     const [totalStudents, totalLessons, progressAgg] = await Promise.all([
