@@ -104,9 +104,6 @@ export const contestDashboardHandle = async (req, res) => {
 
 export const subscriptionAnalyticsHandle = async (req, res) => {
   try {
-    // ======================
-    // 📦 SUBSCRIPTION COUNTS
-    // ======================
     const [totalSubscriptions, activeSubscriptions, cancelledSubscriptions] =
       await Promise.all([
         UserSubscription.countDocuments(),
@@ -114,47 +111,42 @@ export const subscriptionAnalyticsHandle = async (req, res) => {
         UserSubscription.countDocuments({ status: "cancelled" }),
       ]);
 
-    // ======================
-    // 💵 REVENUE BY PLAN
-    // ======================
     const revenueByPlan = await BillingHistory.aggregate([
       { $match: { status: "paid" } },
+
       {
         $group: {
           _id: "$planId",
-          totalUsers: { $addToSet: "$userId" }, // unique payers
-          totalRevenue: { $sum: "$amount" }, // cents
+          totalUsersSet: { $addToSet: "$userId" },
+          totalRevenue: { $sum: "$amount" }, // smallest unit
+          currency: { $first: "$currency" },
         },
       },
-      {
-        $project: {
-          planId: "$_id",
-          totalUsers: { $size: "$totalUsers" },
-          totalRevenue: 1,
-        },
-      },
+
       {
         $lookup: {
-          from: "plans",
-          localField: "planId",
+          from: Plan.collection.name, // "plans"
+          localField: "_id",
           foreignField: "_id",
           as: "plan",
         },
       },
-      { $unwind: "$plan" },
+
+      { $unwind: { path: "$plan", preserveNullAndEmptyArrays: true } },
+
       {
         $project: {
-          planName: "$plan.name",
           price: "$plan.price",
-          totalUsers: 1,
-          totalRevenue: 1, // cents
+          totalUsers: { $size: "$totalUsersSet" },
+          totalRevenue: 1,
+          currency: 1,
         },
       },
     ]);
 
     const totalRevenue = revenueByPlan.reduce(
-      (sum, p) => sum + p.totalRevenue,
-      0,
+      (sum, p) => sum + (p.totalRevenue || 0),
+      0
     );
 
     return res.status(200).json(
@@ -171,8 +163,8 @@ export const subscriptionAnalyticsHandle = async (req, res) => {
             revenueByPlan,
           },
         },
-        Msg.SUBSCRIPTION_FETCHED,
-      ),
+        Msg.SUBSCRIPTION_FETCHED
+      )
     );
   } catch (error) {
     console.error("Subscription analytics error:", error);
