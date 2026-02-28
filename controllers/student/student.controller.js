@@ -382,7 +382,7 @@ export const profileHandle = async (req, res) => {
 
     // 1️⃣ Student basic info
     const student = await Student.findById(req.user.id)
-      .select("firstName lastName avatar xp level isVerified isActive role")
+      .select("firstName lastName avatar xp level isVerified isActive role ")
       .lean();
 
     if (!student) {
@@ -447,7 +447,12 @@ export const profileHandle = async (req, res) => {
             avatar: student.avatar
               ? await getSignedFileUrl(student.avatar)
               : process.env.DEFAULT_PROFILE_PIC,
-
+            email: student.email,
+            phone: student.phone,
+            userName: student.userName,
+            age: student.age,
+            gender: student.gender,
+            grade: student.grade,
             isActive: student.isActive,
             isVerified: student.isVerified,
           },
