@@ -382,7 +382,9 @@ export const profileHandle = async (req, res) => {
 
     // 1️⃣ Student basic info
     const student = await Student.findById(req.user.id)
-      .select("firstName lastName avatar xp level isVerified isActive role email phone userName age gender grade ")
+      .select(
+        "firstName lastName avatar xp level isVerified isActive role email phone userName age gender grade ",
+      )
       .lean();
 
     if (!student) {
@@ -1136,19 +1138,19 @@ export const studentDashboardHandle = async (req, res) => {
 
           currentLesson: activeLesson
             ? {
-                lessonId: activeLesson.lessonId._id,
-                title: activeLesson.lessonId.title,
-                progress: activeLesson.progress,
-                lastVideoId: activeLesson.lastVideoId,
+                lessonId: activeLesson.lessonId._id || null,
+                title: activeLesson.lessonId.title || null,
+                progress: activeLesson.progress || 0,
+                lastVideoId: activeLesson.lastVideoId || null,
               }
             : null,
 
           activeQuest: activeQuest
             ? {
-                questId: activeQuest.questId._id,
-                title: activeQuest.questId.title,
-                completed: activeQuest.currentQuestionIndex,
-                total: activeQuest.questId.questionCount,
+                questId: activeQuest.questId._id ? activeQuest.questId._id : null,
+                title: activeQuest.questId.title ? activeQuest.questId.title : null,
+                completed: activeQuest.currentQuestionIndex || 0,
+                total: activeQuest.questId.questionCount || 0,
               }
             : null,
         },
