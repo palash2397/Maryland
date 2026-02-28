@@ -382,7 +382,7 @@ export const profileHandle = async (req, res) => {
 
     // 1️⃣ Student basic info
     const student = await Student.findById(req.user.id)
-      .select("firstName lastName avatar xp level isVerified isActive role ")
+      .select("firstName lastName avatar xp level isVerified isActive role email phone userName age gender grade ")
       .lean();
 
     if (!student) {
@@ -965,9 +965,7 @@ export const completeChapterHandle = async (req, res) => {
     });
 
     const completedCount = lessonProgress.completedVideos.length;
-    const progress = Math.round(
-      (completedCount / totalChapters) * 100,
-    );
+    const progress = Math.round((completedCount / totalChapters) * 100);
 
     lessonProgress.progress = progress;
 
@@ -1017,12 +1015,9 @@ export const completeChapterHandle = async (req, res) => {
     );
   } catch (error) {
     console.error("Complete chapter error:", error);
-    return res
-      .status(500)
-      .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
-
 
 export const getLessonProgressHandle = async (req, res) => {
   try {
@@ -1087,7 +1082,6 @@ export const getLessonProgressHandle = async (req, res) => {
   }
 };
 
-
 export const studentDashboardHandle = async (req, res) => {
   try {
     const studentId = req.user.id;
@@ -1097,7 +1091,7 @@ export const studentDashboardHandle = async (req, res) => {
       .select("firstName lastName xp level")
       .lean();
 
-    console.log("student --------->", req.user.id)
+    console.log("student --------->", req.user.id);
 
     // 2️⃣ Stats
     const completedLessons = await StudentLessonProgress.countDocuments({
@@ -1112,7 +1106,7 @@ export const studentDashboardHandle = async (req, res) => {
       .populate("lessonId", "title")
       .lean();
 
-    console.log("active lesson --------->", activeLesson)
+    console.log("active lesson --------->", activeLesson);
 
     const activeQuest = await StudentQuest.findOne({
       studentId,
@@ -1120,8 +1114,8 @@ export const studentDashboardHandle = async (req, res) => {
     })
       .populate("questId", "title questionCount")
       .lean();
-      
-    console.log("active quest --------->", activeQuest)
+
+    console.log("active quest --------->", activeQuest);
 
     const badgesEarned = await StudentBadge.countDocuments({
       studentId,
@@ -1163,9 +1157,7 @@ export const studentDashboardHandle = async (req, res) => {
     );
   } catch (error) {
     console.error("Student dashboard error:", error);
-    return res
-      .status(500)
-      .json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
+    return res.status(500).json(new ApiResponse(500, {}, Msg.SERVER_ERROR));
   }
 };
 
