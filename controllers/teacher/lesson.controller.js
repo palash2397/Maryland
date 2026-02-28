@@ -213,6 +213,9 @@ export const allLessonHandle = async (req, res) => {
         chapters: await Promise.all(
           chapters.map(async (chapter) => ({
             ...chapter,
+            thumbnail: chapter.thumbnail
+              ? await getSignedFileUrl(chapter.thumbnail, 3600)
+              : null,
             videoUrl: chapter.videoUrl
               ? await getSignedFileUrl(chapter.videoUrl, 3600)
               : null,
