@@ -20,10 +20,7 @@ export const s3Uploader = (folderMap = {}) =>
 export const uploadLessonFiles = s3Uploader({
   video: "lessons/videos",
   thumbnail: "lessons/thumbnails",
-}).fields([
-  { name: "video", maxCount: 1 },
-  { name: "thumbnail", maxCount: 1 },
-]);
+}).single('thumbnail')
 
 export const uploadProfileImage = s3Uploader({
   avatar: "users/avatars",

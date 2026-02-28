@@ -18,6 +18,7 @@ import Quiz from "../../models/quizz/quizz.js";
 import Quest from "../../models/quest/quest.js";
 
 export const createLessonHandle = async (req, res) => {
+  
   try {
     const { title, topic, difficultyLevel, description } = req.body;
 
@@ -43,7 +44,7 @@ export const createLessonHandle = async (req, res) => {
       topic,
       difficultyLevel,
       description,
-      thumbnail: null,
+      thumbnail: req.file ? req.file.key : null,
     });
 
     return res.status(201).json(new ApiResponse(201, lesson, Msg.DATA_ADDED));
