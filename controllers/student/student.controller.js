@@ -1145,14 +1145,15 @@ export const studentDashboardHandle = async (req, res) => {
               }
             : null,
 
-          activeQuest: activeQuest
-            ? {
-                questId: activeQuest.questId._id ? activeQuest.questId._id : null,
-                title: activeQuest.questId.title ? activeQuest.questId.title : null,
-                completed: activeQuest.currentQuestionIndex || 0,
-                total: activeQuest.questId.questionCount || 0,
-              }
-            : null,
+          activeQuest:
+            activeQuest && activeQuest.questId
+              ? {
+                  questId: activeQuest.questId?._id || null,
+                  title: activeQuest.questId?.title || null,
+                  completed: activeQuest.currentQuestionIndex || 0,
+                  total: activeQuest.questId?.questionCount || 0,
+                }
+              : null,
         },
         Msg.DATA_FETCHED,
       ),
