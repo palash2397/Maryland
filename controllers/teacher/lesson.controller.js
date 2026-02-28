@@ -858,11 +858,13 @@ export const quizzByQuestIdHandle = async (req, res) => {
   try {
     const { id } = req.params;
     const quest = await Quest.findById(id);
+   
     if (!quest) {
       return res
         .status(404)
         .json(new ApiResponse(404, {}, Msg.QUEST_NOT_FOUND));
     }
+
 
     quest.thumbnail = await getSignedFileUrl(quest.thumbnail);
     const quizz = await Quiz.find({ questId: id });

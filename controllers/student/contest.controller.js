@@ -30,7 +30,7 @@ export const startQuestHandle = async (req, res) => {
     }
 
     // 2. Fetch quiz linked to quest
-    const quiz = await Quiz.findOne({ questId: quest.quizId });
+    const quiz = await Quiz.findOne({ questId: quest._id });
     if (!quiz) {
       return res
         .status(400)
